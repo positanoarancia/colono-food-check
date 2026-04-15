@@ -152,11 +152,11 @@ function getMatchedSummary(result: CheckResponse) {
 
 function getStatusDescription(result: CheckResponse) {
   if (result.status === "allowed") {
-    return `대장내시경 ${result.dayStage.name} 기준으로 비교적 안전한 편이에요.`;
+    return `대장내시경 ${result.dayStage.name}엔 비교적 무난해요.`;
   }
 
   if (result.status === "caution") {
-    return "상황에 따라 부담이 될 수 있어요. 양을 줄이거나 더 안전한 음식으로 바꾸는 게 좋아요.";
+    return "양을 줄이거나 더 순한 음식이 좋아요.";
   }
 
   return "검사 준비에 방해가 될 수 있어요.";
@@ -165,7 +165,86 @@ function getStatusDescription(result: CheckResponse) {
 function getFallbackCopy() {
   return {
     title: "등록되지 않은 음식이에요",
-    body: "정확한 판정 기준이 없어 보수적으로 안내하고 있어요. 비슷한 음식도 함께 확인해보세요.",
+    body: "정확한 기준이 없어 조심해서 안내하고 있어요.",
+  };
+}
+
+function getShortReasons(result: CheckResponse) {
+  if (result.matchedType === "fallback") {
+    return {
+      primary: "기준이 없어 조심해서 봐요.",
+      secondary: "비슷한 음식도 같이 확인해보세요.",
+    };
+  }
+
+  const tagSet = new Set(result.appliedTagSlugs);
+
+  if (result.status === "allowed") {
+    if (tagSet.has("clear-broth")) {
+      return {
+        primary: "맑고 부담이 적은 편이에요.",
+        secondary: "이 단계 식단에 비교적 잘 맞아요.",
+      };
+    }
+
+    if (tagSet.has("low-fiber") || tagSet.has("soft-food")) {
+      return {
+        primary: "부담이 적고 무난한 편이에요.",
+        secondary: "이 단계에서 비교적 안전해요.",
+      };
+    }
+
+    return {
+      primary: "지금은 비교적 괜찮아요.",
+      secondary: "양만 과하지 않게 드세요.",
+    };
+  }
+
+  if (result.status === "caution") {
+    if (tagSet.has("processed")) {
+      return {
+        primary: "가공이 많아 조심하는 편이 좋아요.",
+        secondary: "양을 줄이거나 다른 음식이 나아요.",
+      };
+    }
+
+    if (tagSet.has("dairy")) {
+      return {
+        primary: "속이 불편할 수 있어요.",
+        secondary: "적게 먹거나 다른 음식이 나아요.",
+      };
+    }
+
+    return {
+      primary: "상황에 따라 부담이 될 수 있어요.",
+      secondary: "양을 줄이면 더 안전해요.",
+    };
+  }
+
+  if (tagSet.has("high-fiber") || tagSet.has("vegetables-heavy") || tagSet.has("namul")) {
+    return {
+      primary: "섬유질이 많아 지금은 피해요.",
+      secondary: "더 부드러운 음식이 좋아요.",
+    };
+  }
+
+  if (tagSet.has("seeded") || tagSet.has("with-peel")) {
+    return {
+      primary: "씨나 껍질 때문에 피해요.",
+      secondary: "잔사가 적은 음식이 더 나아요.",
+    };
+  }
+
+  if (tagSet.has("spicy-seasoning") || tagSet.has("fried")) {
+    return {
+      primary: "자극이 있어 지금은 피해요.",
+      secondary: "맑고 순한 음식이 더 좋아요.",
+    };
+  }
+
+  return {
+    primary: "검사 준비엔 맞지 않는 편이에요.",
+    secondary: "더 안전한 음식으로 바꾸세요.",
   };
 }
 
@@ -219,26 +298,19 @@ export default function HomePage() {
 
   const status = result ? statusConfig[result.status] : null;
   const matchMeta = result ? matchedTypeConfig[result.matchedType] : null;
+  const shortReasons = result ? getShortReasons(result) : null;
+  const activeStage = stageOptions.find((option) => option.value === dayStage);
 
   return (
     <main className="page">
       <div className="page-shell">
         <section className="hero-card">
           <div className="eyebrow">대장내시경 음식체크 by 건강신호등</div>
-          <div className="hero-grid">
-            <div>
-              <h1 className="hero-title">이 음식, 지금 먹어도 되는지 바로 확인</h1>
-              <p className="hero-copy">
-                검색하고 날짜만 고르면, 지금 단계에서 먹어도 되는지 빠르게 정리해드려요.
-              </p>
-            </div>
-            <div className="hero-aside">
-              <div className="aside-kicker">한 줄 안내</div>
-              <p className="aside-copy">
-                상태를 먼저 보고, 이유를 확인한 뒤, 유사 음식이나 추천 메뉴로 바로 이어서
-                확인하면 됩니다.
-              </p>
-            </div>
+          <div className="hero-copy-block">
+            <h1 className="hero-title">대장내시경 전 음식, 바로 검색</h1>
+            <p className="hero-copy">
+              지금 단계에 맞는 음식인지 먼저 확인하고, 더 나은 선택까지 이어서 볼 수 있어요.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="search-panel">
@@ -251,10 +323,10 @@ export default function HomePage() {
                   className={`stage-button${dayStage === option.value ? " is-active" : ""}`}
                 >
                   <span>{option.label}</span>
-                  <small>{option.hint}</small>
                 </button>
               ))}
             </div>
+            <p className="stage-hint">{activeStage?.hint}</p>
 
             <div className="search-row">
               <label className="search-input-wrap">
@@ -267,13 +339,20 @@ export default function HomePage() {
                 />
               </label>
               <button type="submit" disabled={loading} className="search-button">
-                {loading ? "확인 중" : "검색"}
+                {loading ? "검색 중..." : "검색"}
               </button>
             </div>
 
+            {loading ? (
+              <div className="loading-card" aria-live="polite">
+                <div className="loading-bar" />
+                <p>음식 정보를 찾고 있어요.</p>
+              </div>
+            ) : null}
+
             <div className="quick-row">
               <p className="micro-copy">
-                정확히 모르는 음식은 보수적으로 안내돼요. 비슷한 음식도 함께 확인해보세요.
+                헷갈리는 음식도 먼저 안전한 쪽으로 안내해드려요.
               </p>
               <span className="quick-label">빠른 예시</span>
               <div className="quick-chips">
@@ -308,11 +387,8 @@ export default function HomePage() {
               <div className="result-main is-single">
                 <div>
                   <h2 className="result-title">{result.query}</h2>
-                  <p className="result-summary">{getMatchedSummary(result)}</p>
-                  <p className="primary-reason">{result.primaryReason}</p>
-                  {result.secondaryReason ? (
-                    <p className="secondary-reason">{result.secondaryReason}</p>
-                  ) : null}
+                  <p className="primary-reason">{shortReasons?.primary}</p>
+                  <p className="secondary-reason">{shortReasons?.secondary}</p>
                 </div>
               </div>
             </article>
@@ -326,12 +402,12 @@ export default function HomePage() {
                 <div className="reason-list">
                   <div className="reason-block is-primary">
                     <strong>핵심 이유</strong>
-                    <p>{result.primaryReason}</p>
+                    <p>{shortReasons?.primary}</p>
                   </div>
-                  {result.secondaryReason ? (
+                  {shortReasons?.secondary ? (
                     <div className="reason-block">
                       <strong>추가 참고</strong>
-                      <p>{result.secondaryReason}</p>
+                      <p>{shortReasons.secondary}</p>
                     </div>
                   ) : null}
                   {result.matchedType === "fallback" ? (
@@ -340,15 +416,16 @@ export default function HomePage() {
                       <p>{getFallbackCopy().body}</p>
                     </div>
                   ) : null}
-                  <div className="support-row">
-                    <span className="support-pill">{matchMeta.label}</span>
-                    <span className="support-pill">
-                      신뢰도 {result.confidenceGrade} · {confidenceCopy[result.confidenceGrade]}
-                    </span>
-                  </div>
                   {(result.topAppliedRules.length > 0 || result.appliedTagSlugs.length > 0) ? (
                     <details className="details-box">
-                      <summary>세부 근거와 태그 보기</summary>
+                      <summary>상세 정보 보기</summary>
+                      <div className="support-row">
+                        <span className="support-pill">{matchMeta.label}</span>
+                        <span className="support-pill">
+                          신뢰도 {result.confidenceGrade} · {confidenceCopy[result.confidenceGrade]}
+                        </span>
+                      </div>
+                      <p className="details-copy">{getMatchedSummary(result)}</p>
                       {result.topAppliedRules.length > 0 ? (
                         <div className="rule-list">
                           {result.topAppliedRules.map((rule) => (
@@ -380,8 +457,8 @@ export default function HomePage() {
             <section className="insight-grid">
               <article className="panel-card">
                 <div className="panel-header">
-                  <h3>유사 음식</h3>
-                  <span>바로 다시 검색 가능</span>
+                  <h3>대체 음식</h3>
+                  <span>바로 눌러서 다시 보기</span>
                 </div>
                 {result.similarFoods.length > 0 ? (
                   <div className="action-list">
@@ -389,11 +466,11 @@ export default function HomePage() {
                       <button
                         key={food.id}
                         type="button"
-                        className="action-card"
+                        className="action-card is-strong"
                         onClick={() => runSearch(food.name)}
                       >
                         <strong>{food.name}</strong>
-                        <span>{food.note ?? "비슷한 선택지로 다시 확인할 수 있습니다."}</span>
+                        <span>{food.note ?? "이 음식으로 바로 다시 확인하기"}</span>
                       </button>
                     ))}
                   </div>
@@ -405,12 +482,22 @@ export default function HomePage() {
               <article className="panel-card">
                 <div className="panel-header">
                   <h3>추천 메뉴</h3>
-                  <span>{result.dayStage.name} 기준</span>
+                  <span>지금 단계에 맞는 선택</span>
                 </div>
                 {result.recommendedMenus.length > 0 ? (
                   <div className="menu-list">
                     {result.recommendedMenus.map((menu) => (
-                      <div key={menu.id} className="menu-card">
+                      <button
+                        key={menu.id}
+                        type="button"
+                        className="menu-card is-strong"
+                        onClick={() => {
+                          const firstFood = menu.foods[0]?.name;
+                          if (firstFood) {
+                            void runSearch(firstFood, result.dayStage.slug);
+                          }
+                        }}
+                      >
                         <div className="menu-topline">
                           <strong>{menu.name}</strong>
                           {menu.mealType ? (
@@ -427,7 +514,7 @@ export default function HomePage() {
                             )
                             .join(" / ")}
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 ) : (
@@ -442,7 +529,7 @@ export default function HomePage() {
       <style jsx>{`
         .page {
           min-height: 100vh;
-          padding: 28px 18px 72px;
+          padding: 32px 20px 80px;
           background:
             radial-gradient(circle at top left, rgba(232, 247, 239, 0.9) 0%, rgba(255, 248, 232, 0.85) 45%, #fff 100%);
           color: #17212f;
@@ -453,7 +540,7 @@ export default function HomePage() {
           max-width: 1080px;
           margin: 0 auto;
           display: grid;
-          gap: 22px;
+          gap: 28px;
         }
 
         .hero-card,
@@ -466,7 +553,7 @@ export default function HomePage() {
 
         .hero-card {
           background: rgba(255, 255, 255, 0.92);
-          padding: 28px;
+          padding: 30px;
         }
 
         .eyebrow {
@@ -482,86 +569,79 @@ export default function HomePage() {
         }
 
         .hero-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
-          gap: 24px;
+          display: none;
+        }
+
+        .hero-copy-block {
           margin-top: 18px;
+          max-width: 680px;
         }
 
         .hero-title {
           margin: 0;
-          font-size: clamp(34px, 5vw, 58px);
-          line-height: 0.98;
-          letter-spacing: -0.05em;
+          font-size: clamp(28px, 4vw, 42px);
+          line-height: 1.08;
+          letter-spacing: -0.04em;
         }
 
         .hero-copy {
-          margin: 16px 0 0;
+          margin: 12px 0 0;
           color: #475467;
-          font-size: 18px;
-          line-height: 1.7;
-          max-width: 620px;
-        }
-
-        .hero-aside {
-          padding: 20px;
-          border-radius: 22px;
-          background: linear-gradient(180deg, #f9fbff 0%, #eef5ff 100%);
-          border: 1px solid #dbe7ff;
-        }
-
-        .aside-kicker {
-          font-size: 13px;
-          font-weight: 800;
-          color: #175cd3;
-          margin-bottom: 10px;
-        }
-
-        .aside-copy {
-          margin: 0;
-          color: #344054;
-          line-height: 1.8;
+          font-size: 16px;
+          line-height: 1.65;
         }
 
         .search-panel {
           display: grid;
-          gap: 14px;
-          margin-top: 24px;
+          gap: 12px;
+          margin-top: 22px;
         }
 
         .stage-row {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
+          display: inline-grid;
+          grid-template-columns: repeat(3, auto);
+          gap: 6px;
+          align-self: start;
+          padding: 4px;
+          border-radius: 999px;
+          background: #f5f7fb;
+          border: 1px solid #e4e7ec;
         }
 
         .stage-button {
-          border: 1px solid #d9dee7;
-          background: #fff;
-          border-radius: 20px;
-          padding: 14px 16px;
-          text-align: left;
+          border: none;
+          background: transparent;
+          border-radius: 999px;
+          padding: 10px 14px;
+          text-align: center;
           cursor: pointer;
-          display: grid;
-          gap: 4px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
         .stage-button span {
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 800;
-          color: #111827;
-        }
-
-        .stage-button small {
           color: #667085;
-          font-size: 13px;
         }
 
         .stage-button.is-active {
-          border-color: #111827;
-          box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
-          transform: translateY(-1px);
+          background: #ffffff;
+          box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+          transform: none;
+        }
+
+        .stage-button.is-active span {
+          color: #101828;
+        }
+
+        .stage-hint {
+          margin: -2px 0 2px;
+          color: #667085;
+          font-size: 13px;
+          line-height: 1.5;
         }
 
         .search-row {
@@ -612,9 +692,43 @@ export default function HomePage() {
           opacity: 0.75;
         }
 
+        .loading-card {
+          display: grid;
+          gap: 8px;
+          padding: 12px 14px;
+          border-radius: 16px;
+          background: #f8fafc;
+          border: 1px solid #e4e7ec;
+        }
+
+        .loading-card p {
+          margin: 0;
+          color: #475467;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .loading-bar {
+          position: relative;
+          overflow: hidden;
+          height: 6px;
+          border-radius: 999px;
+          background: #e7edf5;
+        }
+
+        .loading-bar::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          width: 36%;
+          border-radius: 999px;
+          background: linear-gradient(90deg, #9ec5ff 0%, #175cd3 100%);
+          animation: loading-slide 1.2s ease-in-out infinite;
+        }
+
         .quick-row {
           display: grid;
-          gap: 10px;
+          gap: 8px;
         }
 
         .micro-copy {
@@ -648,7 +762,7 @@ export default function HomePage() {
 
         .result-stack {
           display: grid;
-          gap: 18px;
+          gap: 16px;
         }
 
         .result-hero {
@@ -699,7 +813,7 @@ export default function HomePage() {
         }
 
         .status-box strong {
-          font-size: 30px;
+          font-size: 28px;
           line-height: 1;
         }
 
@@ -712,6 +826,7 @@ export default function HomePage() {
           display: grid;
           gap: 18px;
           margin-top: 22px;
+          margin-top: 16px;
         }
 
         .result-main.is-single {
@@ -721,7 +836,7 @@ export default function HomePage() {
         .result-title {
           margin: 0;
           font-size: clamp(32px, 4vw, 44px);
-          line-height: 1;
+          line-height: 1.05;
           letter-spacing: -0.04em;
           color: #101828;
         }
@@ -744,29 +859,31 @@ export default function HomePage() {
         }
 
         .primary-reason {
-          margin: 18px 0 0;
-          font-size: 18px;
+          margin: 16px 0 0;
+          font-size: 20px;
           color: #243041;
           font-weight: 700;
+          line-height: 1.45;
         }
 
         .secondary-reason {
-          margin: 12px 0 0;
-          font-size: 15px;
+          margin: 10px 0 0;
+          font-size: 16px;
+          line-height: 1.7;
         }
 
         .reason-grid {
           display: grid;
-          gap: 16px;
+          gap: 12px;
         }
 
         .reason-list {
           display: grid;
-          gap: 12px;
+          gap: 14px;
         }
 
         .reason-block {
-          padding: 16px;
+          padding: 18px;
           border-radius: 18px;
           background: #f8fafc;
           border: 1px solid #e5e7eb;
@@ -831,6 +948,12 @@ export default function HomePage() {
           list-style: none;
         }
 
+        .details-copy {
+          margin: 12px 0 0;
+          color: #667085;
+          line-height: 1.7;
+        }
+
         .details-box summary::-webkit-details-marker {
           display: none;
         }
@@ -853,12 +976,12 @@ export default function HomePage() {
         .insight-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 16px;
+          gap: 14px;
         }
 
         .panel-card {
           background: rgba(255, 255, 255, 0.96);
-          padding: 22px;
+          padding: 20px;
         }
 
         .panel-header {
@@ -885,7 +1008,7 @@ export default function HomePage() {
         .menu-list,
         .action-list {
           display: grid;
-          gap: 12px;
+          gap: 10px;
         }
 
         .rule-item {
@@ -919,7 +1042,7 @@ export default function HomePage() {
         .menu-card {
           width: 100%;
           text-align: left;
-          padding: 14px;
+          padding: 16px 16px 15px;
           border-radius: 18px;
           border: 1px solid #e5e7eb;
           background: #fff;
@@ -929,6 +1052,20 @@ export default function HomePage() {
           cursor: pointer;
           display: grid;
           gap: 6px;
+        }
+
+        .action-card.is-strong,
+        .menu-card.is-strong {
+          cursor: pointer;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+          transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+
+        .action-card.is-strong:hover,
+        .menu-card.is-strong:hover {
+          transform: translateY(-1px);
+          border-color: #cfd7e3;
+          box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
         }
 
         .action-card strong,
@@ -948,7 +1085,6 @@ export default function HomePage() {
         }
 
         @media (max-width: 920px) {
-          .hero-grid,
           .result-main,
           .insight-grid {
             grid-template-columns: 1fr;
@@ -957,32 +1093,61 @@ export default function HomePage() {
 
         @media (max-width: 720px) {
           .page {
-            padding: 18px 14px 48px;
+            padding: 20px 14px 56px;
           }
 
           .hero-card,
           .result-hero,
           .panel-card {
             border-radius: 24px;
-            padding: 20px;
+            padding: 22px;
           }
 
-          .stage-row,
           .search-row {
             grid-template-columns: 1fr;
           }
 
           .hero-title {
-            font-size: 38px;
+            font-size: 32px;
           }
 
           .hero-copy {
-            font-size: 16px;
+            font-size: 15px;
           }
 
           .status-box {
             min-width: 0;
             width: 100%;
+          }
+
+          .page-shell {
+            gap: 20px;
+          }
+
+          .result-stack {
+            gap: 16px;
+          }
+
+          .stage-row {
+            width: 100%;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+
+          .stage-button {
+            padding: 10px 8px;
+          }
+
+          .stage-button span {
+            font-size: 13px;
+          }
+        }
+
+        @keyframes loading-slide {
+          0% {
+            transform: translateX(-120%);
+          }
+          100% {
+            transform: translateX(300%);
           }
         }
       `}</style>
