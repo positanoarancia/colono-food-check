@@ -5,11 +5,22 @@ import {
   mergeCandidateTags,
   resolveJudgement,
   type CandidateTag,
+  type ExposedAppliedRule,
   type SearchMatchedType as EngineSearchMatchedType,
   type StageRule,
 } from "./judgement-engine";
 import { normalizeKoreanText } from "./normalize";
 import { prisma } from "./prisma";
+
+export class CheckFoodError extends Error {
+  constructor(
+    message: string,
+    public readonly code: "BAD_REQUEST" | "NOT_FOUND",
+  ) {
+    super(message);
+    this.name = "CheckFoodError";
+  }
+}
 
 type MatchedEntity =
   | {
@@ -161,6 +172,9 @@ async function findAlias(normalizedQuery: string) {
 
 async function findFoodGroup(normalizedQuery: string) {
   const groups = await prisma.foodGroup.findMany({
+    where: {
+      isFallbackGroup: false,
+    },
     include: {
       groupTags: {
         include: {
@@ -180,18 +194,6 @@ async function findFoodGroup(normalizedQuery: string) {
     groups.find((group: FoodGroupWithRelations) => normalizeKoreanText(group.name).includes(normalizedQuery)) ??
     groups.find((group: FoodGroupWithRelations) => normalizedQuery.includes(normalizeKoreanText(group.name)))
   );
-}
-
-function pickConfidence(matchedType: SearchMatchedType): ConfidenceGrade {
-  if (matchedType === "exact_food") {
-    return "A";
-  }
-
-  if (matchedType === "alias" || matchedType === "food_group") {
-    return "B";
-  }
-
-  return "C";
 }
 
 function buildStageRules(
@@ -218,6 +220,15 @@ function engineType(type: SearchMatchedType): EngineSearchMatchedType {
     : "none";
 }
 
+function toUiRule(rule: ExposedAppliedRule) {
+  return {
+    tagSlug: rule.tagSlug,
+    status: rule.status,
+    rationale: rule.rationale,
+    source: rule.source,
+  };
+}
+
 export interface CheckFoodResult {
   query: string;
   normalizedQuery: string;
@@ -235,7 +246,10 @@ export interface CheckFoodResult {
   matchedEntity: MatchedEntity;
   status: "allowed" | "caution" | "avoid";
   confidenceGrade: ConfidenceGrade;
-  rationale: string;
+  primaryReason: string;
+  secondaryReason?: string;
+  appliedTagSlugs: string[];
+  topAppliedRules: Array<ReturnType<typeof toUiRule>>;
   similarFoods: Array<{
     id: string;
     slug: string;
@@ -255,7 +269,6 @@ export interface CheckFoodResult {
       quantityNote: string | null;
     }>;
   }>;
-  appliedTags: string[];
 }
 
 export async function checkFoodByQuery(input: {
@@ -263,6 +276,10 @@ export async function checkFoodByQuery(input: {
   dayStageSlug: string;
   query: string;
 }): Promise<CheckFoodResult> {
+  if (!input.query.trim()) {
+    throw new CheckFoodError("검색어가 비어 있습니다", "BAD_REQUEST");
+  }
+
   const normalizedQuery = normalizeKoreanText(input.query);
 
   const condition = await prisma.condition.findUnique({
@@ -270,7 +287,7 @@ export async function checkFoodByQuery(input: {
   });
 
   if (!condition || !condition.isActive) {
-    throw new Error("Condition not found");
+    throw new CheckFoodError("요청한 condition을 찾을 수 없습니다", "NOT_FOUND");
   }
 
   const dayStage = await prisma.dayStage.findUnique({
@@ -283,7 +300,7 @@ export async function checkFoodByQuery(input: {
   });
 
   if (!dayStage) {
-    throw new Error("Day stage not found");
+    throw new CheckFoodError("요청한 dayStage를 찾을 수 없습니다", "NOT_FOUND");
   }
 
   const rules = await prisma.judgementRule.findMany({
@@ -313,12 +330,12 @@ export async function checkFoodByQuery(input: {
       name: exactFood.name,
     };
     candidateTags = toCandidateTagsFromFood(exactFood);
-      similarFoods = exactFood.similarFrom.map((item: FoodWithRelations["similarFrom"][number]) => ({
-        id: item.similarFood.id,
-        slug: item.similarFood.slug,
-        name: item.similarFood.name,
-        note: item.note,
-      }));
+    similarFoods = exactFood.similarFrom.map((item: FoodWithRelations["similarFrom"][number]) => ({
+      id: item.similarFood.id,
+      slug: item.similarFood.slug,
+      name: item.similarFood.name,
+      note: item.note,
+    }));
   } else {
     const aliasMatch = normalizedQuery ? await findAlias(normalizedQuery) : null;
 
@@ -359,10 +376,10 @@ export async function checkFoodByQuery(input: {
           id: food.id,
           slug: food.slug,
           name: food.name,
-          note: "같은 음식군 예시",
+          note: "같은 음식군에서 자주 검색되는 대표 음식입니다.",
         }));
       } else {
-        matchedType = "fallback";
+        matchedType = normalizedQuery ? "fallback" : "none";
       }
     }
   }
@@ -389,7 +406,17 @@ export async function checkFoodByQuery(input: {
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 
-  const confidenceGrade = pickConfidence(matchedType);
+  const logMetadata: Prisma.JsonObject = {
+    appliedTagSlugs: judgement.appliedTagSlugs,
+    topAppliedRules: judgement.topAppliedRules.map((rule) => ({
+      tagSlug: rule.tagSlug,
+      status: rule.status,
+      rationale: rule.rationale,
+      source: rule.source,
+    })),
+    matchedEntityType: matchedEntity?.type ?? null,
+    fallbackReasonUsed: judgement.usedFallbackReason,
+  };
 
   await prisma.searchLog.create({
     data: {
@@ -400,11 +427,8 @@ export async function checkFoodByQuery(input: {
       matchedType,
       matchedId,
       resultStatus: judgement.status,
-      confidenceGrade,
-      metadata: {
-        appliedTagSlugs: judgement.appliedTagSlugs,
-        matchedEntityType: matchedEntity?.type ?? null,
-      },
+      confidenceGrade: judgement.confidenceGrade,
+      metadata: logMetadata,
     },
   });
 
@@ -424,8 +448,11 @@ export async function checkFoodByQuery(input: {
     matchedType,
     matchedEntity,
     status: judgement.status,
-    confidenceGrade,
-    rationale: judgement.primaryReason,
+    confidenceGrade: judgement.confidenceGrade,
+    primaryReason: judgement.primaryReason,
+    secondaryReason: judgement.secondaryReason,
+    appliedTagSlugs: judgement.appliedTagSlugs,
+    topAppliedRules: judgement.topAppliedRules.map(toUiRule),
     similarFoods,
     recommendedMenus: recommendedMenus.map((menu) => ({
       id: menu.id,
@@ -440,6 +467,5 @@ export async function checkFoodByQuery(input: {
         quantityNote: menuFood.quantityNote,
       })),
     })),
-    appliedTags: judgement.appliedTagSlugs,
   };
 }

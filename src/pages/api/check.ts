@@ -1,11 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { checkFoodByQuery } from "../../lib/check-food";
+import { CheckFoodError, checkFoodByQuery } from "../../lib/check-food";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({
+      error: "GET 메서드만 지원합니다",
+      detail: "Method not allowed",
+    });
   }
 
   const condition = typeof req.query.condition === "string" ? req.query.condition : "";
@@ -14,7 +17,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (!condition || !dayStage || !query) {
     return res.status(400).json({
-      error: "Missing required query parameters",
+      error: "condition, dayStage, query 파라미터가 필요합니다",
+      detail: "Missing required query parameters",
       required: ["condition", "dayStage", "query"],
     });
   }
@@ -28,13 +32,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json(result);
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message === "Condition not found" || error.message === "Day stage not found") {
-        return res.status(404).json({ error: error.message });
-      }
+    if (error instanceof CheckFoodError) {
+      const statusCode = error.code === "BAD_REQUEST" ? 400 : 404;
+      return res.status(statusCode).json({
+        error: error.message,
+        detail: error.code,
+      });
     }
 
     console.error(error);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({
+      error: "서버 내부 오류가 발생했습니다",
+      detail: "Internal server error",
+    });
   }
 }

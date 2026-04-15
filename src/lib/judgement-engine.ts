@@ -31,13 +31,23 @@ export interface AppliedRule extends StageRule {
   source: "food" | "food_group";
 }
 
+export interface ExposedAppliedRule {
+  tagSlug: string;
+  status: JudgementStatus;
+  rationale: string;
+  source: "food" | "food_group";
+}
+
 export interface JudgementResult {
   status: JudgementStatus;
   confidenceGrade: ConfidenceGrade;
   matchedType: SearchMatchedType;
   appliedRules: AppliedRule[];
+  topAppliedRules: ExposedAppliedRule[];
   appliedTagSlugs: string[];
   primaryReason: string;
+  secondaryReason?: string;
+  usedFallbackReason: boolean;
 }
 
 const statusRank: Record<JudgementStatus, number> = {
@@ -80,18 +90,30 @@ export function resolveJudgement(input: JudgementInput): JudgementResult {
     });
 
   const bestRule = appliedRules[0];
+  const usedFallbackReason = appliedRules.length === 0;
   const status = bestRule?.status ?? "caution";
+  const topAppliedRules = appliedRules.slice(0, 2).map((rule) => ({
+    tagSlug: rule.tagSlug,
+    status: rule.status,
+    rationale: rule.rationale,
+    source: rule.source,
+  }));
   const primaryReason =
-    bestRule?.rationale ??
-    "직접 규칙이 없어서 보수적으로 caution 처리했다. 이후 검색 로그를 보고 데이터 보강이 필요하다.";
+    topAppliedRules[0]?.rationale ??
+    "직접 등록된 규칙이 없어 보수적으로 주의 처리했습니다. 미등록 음식일 수 있어 정확 판정보다 안전한 안내를 우선합니다.";
+  const secondaryReason = topAppliedRules[1]?.rationale;
+  const confidenceGrade = usedFallbackReason ? "C" : confidenceByMatchedType[input.matchedType];
 
   return {
     status,
-    confidenceGrade: confidenceByMatchedType[input.matchedType],
+    confidenceGrade,
     matchedType: input.matchedType,
     appliedRules,
+    topAppliedRules,
     appliedTagSlugs: [...new Set(appliedRules.map((rule) => rule.tagSlug))],
     primaryReason,
+    secondaryReason,
+    usedFallbackReason,
   };
 }
 

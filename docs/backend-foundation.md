@@ -52,11 +52,12 @@ SearchLog 해석 규칙:
 
 - condition: 1개 (`대장내시경`)
 - day stages: 3개 (`5일 전`, `3일 전`, `1일 전`)
-- food groups: 24개
+- food groups: 27개
 - food tags: 17개
 - foods: 58개
-- aliases: 26개
+- aliases: 29개
 - rules: 51개
+- similar foods: 12개
 - recommended menus: 6개
 - sources: 4개
 
@@ -66,6 +67,8 @@ SearchLog 해석 규칙:
 - `FoodTagMap` 은 개별 음식 예외나 보정만 넣는다.
 - 출처는 MVP 초기에 `RuleSource` 위주로만 연결한다.
 - `FoodSource`, `FoodGroupSource` 는 비워 둬도 된다.
+- 대표 음식은 검색량 가능성, 병원 가이드 대표성, 일상식/분식/편의점/배달 커버리지, 헷갈리기 쉬운 음식 우선순위로 선정한다.
+- `isFallbackGroup` 이 켜진 미등록 음식군은 향후 unknown noodle / spicy food / processed food 임시 분류용 여지로 남겨 둔다.
 
 이 방향을 택한 이유는 MVP 에서 중요한 건 “왜 이 결과가 나왔는지” 설명하는 rule 근거이기 때문이다. food/group 별 출처는 나중에 상세 화면이 필요해질 때 점진적으로 채워도 된다.
 
