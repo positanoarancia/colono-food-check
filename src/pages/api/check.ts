@@ -4,6 +4,8 @@ import { Prisma } from "@prisma/client";
 import { CheckFoodError, checkFoodByQuery } from "../../lib/check-food";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const startedAt = Date.now();
+
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     return res.status(405).json({
@@ -45,6 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       matchedType: result.matchedType,
       status: result.status,
       confidenceGrade: result.confidenceGrade,
+      durationMs: Date.now() - startedAt,
     });
 
     return res.status(200).json(result);
@@ -57,6 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         query,
         code: error.code,
         message: error.message,
+        durationMs: Date.now() - startedAt,
       });
       return res.status(statusCode).json({
         error: error.message,
@@ -68,6 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       condition,
       dayStage,
       query,
+      durationMs: Date.now() - startedAt,
       error:
         error instanceof Prisma.PrismaClientKnownRequestError
           ? {

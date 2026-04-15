@@ -320,56 +320,66 @@ export default function HomePage() {
               </div>
 
               <p className="primary-reason">{result.primaryReason}</p>
-              {result.secondaryReason ? (
-                <p className="secondary-reason">추가 참고: {result.secondaryReason}</p>
-              ) : null}
-
-              {result.matchedType === "fallback" ? (
-                <div className="fallback-callout">
-                  <strong>미등록 음식 안내</strong>
-                  <p>
-                    현재는 직접 등록된 규칙이 없어 보수적으로 안내합니다. 비슷한 음식으로 다시
-                    검색하거나, 아래 추천 메뉴와 유사 음식을 함께 참고하는 편이 안전합니다.
-                  </p>
-                </div>
-              ) : null}
-
-              {result.appliedTagSlugs.length > 0 ? (
-                <div className="tag-row">
-                  {result.appliedTagSlugs.map((tag) => (
-                    <span key={tag} className="tag-pill" style={{ background: status.chip }}>
-                      {tagLabel[tag] ?? tag}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
             </article>
 
-            <section className="insight-grid">
+            <section className="reason-grid">
               <article className="panel-card">
                 <div className="panel-header">
-                  <h3>판정 근거</h3>
-                  <span>핵심 1~2개만 표시</span>
+                  <h3>판정 이유</h3>
+                  <span>먼저 읽어야 할 정보</span>
                 </div>
-                {result.topAppliedRules.length > 0 ? (
-                  <div className="rule-list">
-                    {result.topAppliedRules.map((rule) => (
-                      <div key={`${rule.tagSlug}-${rule.source}`} className="rule-item">
-                        <div className="rule-topline">
-                          <strong>{tagLabel[rule.tagSlug] ?? rule.tagSlug}</strong>
-                          <span>{rule.source === "food" ? "개별 음식 보정" : "음식군 기본 규칙"}</span>
-                        </div>
-                        <p>{rule.rationale}</p>
-                      </div>
-                    ))}
+                <div className="reason-list">
+                  <div className="reason-block is-primary">
+                    <strong>핵심 이유</strong>
+                    <p>{result.primaryReason}</p>
                   </div>
-                ) : (
-                  <p className="empty-copy">
-                    직접 등록된 규칙이 없어 보수적 안내가 적용되었습니다.
-                  </p>
-                )}
+                  {result.secondaryReason ? (
+                    <div className="reason-block">
+                      <strong>추가 참고</strong>
+                      <p>{result.secondaryReason}</p>
+                    </div>
+                  ) : null}
+                  {result.matchedType === "fallback" ? (
+                    <div className="fallback-callout">
+                      <strong>미등록 음식 안내</strong>
+                      <p>
+                        현재는 직접 등록된 규칙이 없어 보수적으로 안내합니다. 비슷한 음식으로 다시
+                        검색하거나, 아래 추천 메뉴와 유사 음식을 함께 참고하는 편이 안전합니다.
+                      </p>
+                    </div>
+                  ) : null}
+                  {(result.topAppliedRules.length > 0 || result.appliedTagSlugs.length > 0) ? (
+                    <details className="details-box">
+                      <summary>세부 근거 보기</summary>
+                      {result.topAppliedRules.length > 0 ? (
+                        <div className="rule-list">
+                          {result.topAppliedRules.map((rule) => (
+                            <div key={`${rule.tagSlug}-${rule.source}`} className="rule-item">
+                              <div className="rule-topline">
+                                <strong>{tagLabel[rule.tagSlug] ?? rule.tagSlug}</strong>
+                                <span>{rule.source === "food" ? "개별 음식 보정" : "음식군 기본 규칙"}</span>
+                              </div>
+                              <p>{rule.rationale}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                      {result.appliedTagSlugs.length > 0 ? (
+                        <div className="tag-row">
+                          {result.appliedTagSlugs.map((tag) => (
+                            <span key={tag} className="tag-pill" style={{ background: status.chip }}>
+                              {tagLabel[tag] ?? tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </details>
+                  ) : null}
+                </div>
               </article>
+            </section>
 
+            <section className="insight-grid">
               <article className="panel-card">
                 <div className="panel-header">
                   <h3>유사 음식</h3>
@@ -781,33 +791,73 @@ export default function HomePage() {
           font-size: 18px;
         }
 
-        .secondary-reason {
-          margin: 10px 0 0;
+        .reason-grid {
+          display: grid;
+          gap: 16px;
         }
 
-        .fallback-callout {
-          margin-top: 18px;
-          padding: 16px 18px;
-          border-radius: 20px;
-          background: rgba(255, 255, 255, 0.78);
-          border: 1px dashed rgba(15, 23, 42, 0.16);
+        .reason-list {
+          display: grid;
+          gap: 12px;
         }
 
+        .reason-block {
+          padding: 16px;
+          border-radius: 18px;
+          background: #f8fafc;
+          border: 1px solid #e5e7eb;
+        }
+
+        .reason-block.is-primary {
+          background: #ffffff;
+          border-color: #d0d5dd;
+        }
+
+        .reason-block strong,
         .fallback-callout strong {
           display: block;
           color: #101828;
           margin-bottom: 6px;
+          font-size: 14px;
         }
 
+        .reason-block p,
         .fallback-callout p {
           margin: 0;
+          color: #475467;
+          line-height: 1.7;
+        }
+
+        .fallback-callout {
+          padding: 16px 18px;
+          border-radius: 20px;
+          background: rgba(255, 248, 232, 0.8);
+          border: 1px dashed rgba(154, 91, 0, 0.24);
+        }
+
+        .details-box {
+          border-radius: 18px;
+          border: 1px solid #e5e7eb;
+          background: #fff;
+          padding: 14px;
+        }
+
+        .details-box summary {
+          cursor: pointer;
+          font-weight: 800;
+          color: #344054;
+          list-style: none;
+        }
+
+        .details-box summary::-webkit-details-marker {
+          display: none;
         }
 
         .tag-row {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
-          margin-top: 18px;
+          margin-top: 14px;
         }
 
         .tag-pill {
@@ -820,7 +870,7 @@ export default function HomePage() {
 
         .insight-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 16px;
         }
 

@@ -289,3 +289,49 @@
 * production DB에 SearchLog가 정상 적재된다
 * fallback 검색어를 운영 중 보강할 수 있는 절차가 있다
 * 검색 유입을 받을 최소 SEO 세팅이 완료된다
+
+
+# TASK.md
+
+## 현재 목표
+
+운영 직전 성능과 사용성을 다듬고, SearchLog 기반 데이터 보강 루프를 더 빠르게 돌릴 수 있게 만든다.
+
+---
+
+## Phase 19 - 성능 최적화
+
+* [x] `/api/check` 단계별 소요 시간 로그 추가
+* [x] condition / dayStage / rules / recommendedMenus 조회 병목 분석
+* [x] exact food / alias 조회 병렬화
+* [x] static 성격 데이터 캐시 적용
+* [x] food group 전체 조회 비용 축소
+* [x] similar foods 후행 조회로 분리
+* [x] Prisma singleton 확인 및 유지
+
+---
+
+## Phase 20 - UI 구조 개선
+
+* [x] 검색 영역 정보 구조 정리
+* [x] 결과 화면을 상단 / 중단 / 하단 구조로 재배치
+* [x] 세부 근거는 접어서 보이게 정리
+* [x] 모바일 / 데스크톱 모두에서 위계가 덜 복잡하게 보이도록 조정
+* [x] 상태색 중심 구조를 유지하되 과한 장식은 줄이기
+
+---
+
+## Phase 21 - 데이터 보강 준비
+
+* [x] fallback 후보 문서 재확인
+* [x] alias / food group / 신규 food 후보 분류 기준 유지
+* [x] 운영 로그 기반 보강 루프 문서 재사용 가능 상태 확인
+
+---
+
+## 현재 우선순위
+
+1. production 성능 로그 확인
+2. warm / cold 응답 차이 확인
+3. fallback 검색어 보강
+4. production 운영 루프 시작
