@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { Prisma } from "@prisma/client";
 
 import { CheckFoodError, checkFoodByQuery } from "../../lib/check-food";
 
@@ -68,7 +69,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       dayStage,
       query,
       error:
-        error instanceof Error
+        error instanceof Prisma.PrismaClientKnownRequestError
+          ? {
+              name: error.name,
+              message: error.message,
+              code: error.code,
+              meta: error.meta,
+              clientVersion: error.clientVersion,
+              stack: error.stack,
+            }
+          : error instanceof Error
           ? {
               name: error.name,
               message: error.message,

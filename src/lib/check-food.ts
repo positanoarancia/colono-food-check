@@ -23,6 +23,54 @@ export class CheckFoodError extends Error {
 }
 
 function serializeError(error: unknown) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      clientVersion: error.clientVersion,
+      stack: error.stack,
+    };
+  }
+
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return {
+      name: error.name,
+      message: error.message,
+      errorCode: error.errorCode,
+      clientVersion: error.clientVersion,
+      stack: error.stack,
+    };
+  }
+
+  if (error instanceof Prisma.PrismaClientRustPanicError) {
+    return {
+      name: error.name,
+      message: error.message,
+      clientVersion: error.clientVersion,
+      stack: error.stack,
+    };
+  }
+
+  if (error instanceof Prisma.PrismaClientUnknownRequestError) {
+    return {
+      name: error.name,
+      message: error.message,
+      clientVersion: error.clientVersion,
+      stack: error.stack,
+    };
+  }
+
+  if (error instanceof Prisma.PrismaClientValidationError) {
+    return {
+      name: error.name,
+      message: error.message,
+      clientVersion: error.clientVersion,
+      stack: error.stack,
+    };
+  }
+
   if (error instanceof Error) {
     return {
       name: error.name,
