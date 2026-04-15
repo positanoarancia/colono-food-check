@@ -22,6 +22,24 @@ export class CheckFoodError extends Error {
   }
 }
 
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+
+  return {
+    value: String(error),
+  };
+}
+
+function logCheckFood(step: string, payload: Record<string, unknown>) {
+  console.log(`[checkFoodByQuery] ${step}`, payload);
+}
+
 type MatchedEntity =
   | {
       type: "food";
@@ -281,191 +299,313 @@ export async function checkFoodByQuery(input: {
   }
 
   const normalizedQuery = normalizeKoreanText(input.query);
+  const requestContext = {
+    conditionSlug: input.conditionSlug,
+    dayStageSlug: input.dayStageSlug,
+    query: input.query,
+    normalizedQuery,
+  };
 
-  const condition = await prisma.condition.findUnique({
-    where: { slug: input.conditionSlug },
-  });
+  logCheckFood("start", requestContext);
 
-  if (!condition || !condition.isActive) {
-    throw new CheckFoodError("요청한 condition을 찾을 수 없습니다", "NOT_FOUND");
-  }
+  try {
+    const condition = await prisma.condition.findUnique({
+      where: { slug: input.conditionSlug },
+    });
 
-  const dayStage = await prisma.dayStage.findUnique({
-    where: {
-      conditionId_slug: {
-        conditionId: condition.id,
-        slug: input.dayStageSlug,
-      },
-    },
-  });
+    logCheckFood("condition.result", {
+      ...requestContext,
+      conditionFound: Boolean(condition),
+      condition: condition
+        ? {
+            id: condition.id,
+            slug: condition.slug,
+            name: condition.name,
+            isActive: condition.isActive,
+          }
+        : null,
+    });
 
-  if (!dayStage) {
-    throw new CheckFoodError("요청한 dayStage를 찾을 수 없습니다", "NOT_FOUND");
-  }
+    if (!condition || !condition.isActive) {
+      throw new CheckFoodError("요청한 condition을 찾을 수 없습니다", "NOT_FOUND");
+    }
 
-  const rules = await prisma.judgementRule.findMany({
-    where: { dayStageId: dayStage.id },
-    include: {
-      foodTag: true,
-    },
-  });
-
-  const stageRules = buildStageRules(rules);
-
-  let matchedType: SearchMatchedType = "none";
-  let matchedEntity: MatchedEntity = null;
-  let candidateTags: CandidateTag[] = [];
-  let similarFoods: CheckFoodResult["similarFoods"] = [];
-  let matchedId: string | null = null;
-
-  const exactFood = normalizedQuery ? await findExactFood(normalizedQuery) : null;
-
-  if (exactFood) {
-    matchedType = "exact_food";
-    matchedId = exactFood.id;
-    matchedEntity = {
-      type: "food",
-      id: exactFood.id,
-      slug: exactFood.slug,
-      name: exactFood.name,
-    };
-    candidateTags = toCandidateTagsFromFood(exactFood);
-    similarFoods = exactFood.similarFrom.map((item: FoodWithRelations["similarFrom"][number]) => ({
-      id: item.similarFood.id,
-      slug: item.similarFood.slug,
-      name: item.similarFood.name,
-      note: item.note,
-    }));
-  } else {
-    const aliasMatch = normalizedQuery ? await findAlias(normalizedQuery) : null;
-
-    if (aliasMatch) {
-      matchedType = "alias";
-      matchedId = aliasMatch.id;
-      matchedEntity = {
-        type: "food_alias",
-        id: aliasMatch.id,
-        alias: aliasMatch.alias,
-        canonicalFood: {
-          id: aliasMatch.food.id,
-          slug: aliasMatch.food.slug,
-          name: aliasMatch.food.name,
+    const dayStage = await prisma.dayStage.findUnique({
+      where: {
+        conditionId_slug: {
+          conditionId: condition.id,
+          slug: input.dayStageSlug,
         },
+      },
+    });
+
+    logCheckFood("dayStage.result", {
+      ...requestContext,
+      conditionId: condition.id,
+      dayStageFound: Boolean(dayStage),
+      dayStage: dayStage
+        ? {
+            id: dayStage.id,
+            slug: dayStage.slug,
+            name: dayStage.name,
+            daysBefore: dayStage.daysBefore,
+          }
+        : null,
+    });
+
+    if (!dayStage) {
+      throw new CheckFoodError("요청한 dayStage를 찾을 수 없습니다", "NOT_FOUND");
+    }
+
+    const rules = await prisma.judgementRule.findMany({
+      where: { dayStageId: dayStage.id },
+      include: {
+        foodTag: true,
+      },
+    });
+
+    logCheckFood("rules.result", {
+      ...requestContext,
+      dayStageId: dayStage.id,
+      ruleCount: rules.length,
+      sampleRuleSlugs: rules.slice(0, 5).map((rule) => rule.foodTag.slug),
+    });
+
+    const stageRules = buildStageRules(rules);
+
+    let matchedType: SearchMatchedType = "none";
+    let matchedEntity: MatchedEntity = null;
+    let candidateTags: CandidateTag[] = [];
+    let similarFoods: CheckFoodResult["similarFoods"] = [];
+    let matchedId: string | null = null;
+
+    const exactFood = normalizedQuery ? await findExactFood(normalizedQuery) : null;
+
+    logCheckFood("exactFood.result", {
+      ...requestContext,
+      found: Boolean(exactFood),
+      food: exactFood
+        ? {
+            id: exactFood.id,
+            slug: exactFood.slug,
+            name: exactFood.name,
+            primaryFoodGroupId: exactFood.primaryFoodGroupId,
+          }
+        : null,
+    });
+
+    if (exactFood) {
+      matchedType = "exact_food";
+      matchedId = exactFood.id;
+      matchedEntity = {
+        type: "food",
+        id: exactFood.id,
+        slug: exactFood.slug,
+        name: exactFood.name,
       };
-      candidateTags = toCandidateTagsFromFood(aliasMatch.food);
-      similarFoods = aliasMatch.food.similarFrom.map((item: FoodWithRelations["similarFrom"][number]) => ({
+      candidateTags = toCandidateTagsFromFood(exactFood);
+      similarFoods = exactFood.similarFrom.map((item: FoodWithRelations["similarFrom"][number]) => ({
         id: item.similarFood.id,
         slug: item.similarFood.slug,
         name: item.similarFood.name,
         note: item.note,
       }));
     } else {
-      const foodGroup = normalizedQuery ? await findFoodGroup(normalizedQuery) : null;
+      const aliasMatch = normalizedQuery ? await findAlias(normalizedQuery) : null;
 
-      if (foodGroup) {
-        matchedType = "food_group";
-        matchedId = foodGroup.id;
+      logCheckFood("alias.result", {
+        ...requestContext,
+        found: Boolean(aliasMatch),
+        alias: aliasMatch
+          ? {
+              id: aliasMatch.id,
+              alias: aliasMatch.alias,
+              foodId: aliasMatch.food.id,
+              canonicalFoodName: aliasMatch.food.name,
+            }
+          : null,
+      });
+
+      if (aliasMatch) {
+        matchedType = "alias";
+        matchedId = aliasMatch.id;
         matchedEntity = {
-          type: "food_group",
-          id: foodGroup.id,
-          slug: foodGroup.slug,
-          name: foodGroup.name,
+          type: "food_alias",
+          id: aliasMatch.id,
+          alias: aliasMatch.alias,
+          canonicalFood: {
+            id: aliasMatch.food.id,
+            slug: aliasMatch.food.slug,
+            name: aliasMatch.food.name,
+          },
         };
-        candidateTags = toCandidateTagsFromFoodGroup(foodGroup);
-        similarFoods = foodGroup.foods.map((food: FoodGroupWithRelations["foods"][number]) => ({
-          id: food.id,
-          slug: food.slug,
-          name: food.name,
-          note: "같은 음식군에서 자주 검색되는 대표 음식입니다.",
+        candidateTags = toCandidateTagsFromFood(aliasMatch.food);
+        similarFoods = aliasMatch.food.similarFrom.map((item: FoodWithRelations["similarFrom"][number]) => ({
+          id: item.similarFood.id,
+          slug: item.similarFood.slug,
+          name: item.similarFood.name,
+          note: item.note,
         }));
       } else {
-        matchedType = normalizedQuery ? "fallback" : "none";
+        const foodGroup = normalizedQuery ? await findFoodGroup(normalizedQuery) : null;
+
+        logCheckFood("foodGroup.result", {
+          ...requestContext,
+          found: Boolean(foodGroup),
+          foodGroup: foodGroup
+            ? {
+                id: foodGroup.id,
+                slug: foodGroup.slug,
+                name: foodGroup.name,
+                isFallbackGroup: foodGroup.isFallbackGroup,
+              }
+            : null,
+        });
+
+        if (foodGroup) {
+          matchedType = "food_group";
+          matchedId = foodGroup.id;
+          matchedEntity = {
+            type: "food_group",
+            id: foodGroup.id,
+            slug: foodGroup.slug,
+            name: foodGroup.name,
+          };
+          candidateTags = toCandidateTagsFromFoodGroup(foodGroup);
+          similarFoods = foodGroup.foods.map((food: FoodGroupWithRelations["foods"][number]) => ({
+            id: food.id,
+            slug: food.slug,
+            name: food.name,
+            note: "같은 음식군에서 자주 검색되는 대표 음식입니다.",
+          }));
+        } else {
+          matchedType = normalizedQuery ? "fallback" : "none";
+        }
       }
     }
-  }
 
-  const judgement = resolveJudgement({
-    matchedType: engineType(matchedType),
-    tags: candidateTags,
-    rules: stageRules,
-  });
+    logCheckFood("match.summary", {
+      ...requestContext,
+      matchedType,
+      matchedId,
+      matchedEntity,
+      candidateTagSlugs: candidateTags.map((tag) => tag.tagSlug),
+      similarFoodCount: similarFoods.length,
+    });
 
-  const recommendedMenus = await prisma.recommendedMenu.findMany({
-    where: {
-      conditionId: condition.id,
-      dayStageId: dayStage.id,
-    },
-    include: {
-      menuFoods: {
-        include: {
-          food: true,
-        },
-        orderBy: { sortOrder: "asc" },
+    const judgement = resolveJudgement({
+      matchedType: engineType(matchedType),
+      tags: candidateTags,
+      rules: stageRules,
+    });
+
+    logCheckFood("judgement.result", {
+      ...requestContext,
+      matchedType,
+      status: judgement.status,
+      confidenceGrade: judgement.confidenceGrade,
+      appliedTagSlugs: judgement.appliedTagSlugs,
+      topAppliedRules: judgement.topAppliedRules,
+      usedFallbackReason: judgement.usedFallbackReason,
+    });
+
+    const recommendedMenus = await prisma.recommendedMenu.findMany({
+      where: {
+        conditionId: condition.id,
+        dayStageId: dayStage.id,
       },
-    },
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-  });
+      include: {
+        menuFoods: {
+          include: {
+            food: true,
+          },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    });
 
-  const logMetadata: Prisma.JsonObject = {
-    appliedTagSlugs: judgement.appliedTagSlugs,
-    topAppliedRules: judgement.topAppliedRules.map((rule) => ({
-      tagSlug: rule.tagSlug,
-      status: rule.status,
-      rationale: rule.rationale,
-      source: rule.source,
-    })),
-    matchedEntityType: matchedEntity?.type ?? null,
-    fallbackReasonUsed: judgement.usedFallbackReason,
-  };
+    logCheckFood("recommendedMenus.result", {
+      ...requestContext,
+      menuCount: recommendedMenus.length,
+      menuSlugs: recommendedMenus.map((menu) => menu.slug),
+    });
 
-  await prisma.searchLog.create({
-    data: {
-      query: input.query,
-      normalizedQuery,
-      conditionId: condition.id,
-      dayStageId: dayStage.id,
+    const logMetadata: Prisma.JsonObject = {
+      appliedTagSlugs: judgement.appliedTagSlugs,
+      topAppliedRules: judgement.topAppliedRules.map((rule) => ({
+        tagSlug: rule.tagSlug,
+        status: rule.status,
+        rationale: rule.rationale,
+        source: rule.source,
+      })),
+      matchedEntityType: matchedEntity?.type ?? null,
+      fallbackReasonUsed: judgement.usedFallbackReason,
+    };
+
+    await prisma.searchLog.create({
+      data: {
+        query: input.query,
+        normalizedQuery,
+        conditionId: condition.id,
+        dayStageId: dayStage.id,
+        matchedType,
+        matchedId,
+        resultStatus: judgement.status,
+        confidenceGrade: judgement.confidenceGrade,
+        metadata: logMetadata,
+      },
+    });
+
+    logCheckFood("searchLog.created", {
+      ...requestContext,
       matchedType,
       matchedId,
       resultStatus: judgement.status,
       confidenceGrade: judgement.confidenceGrade,
-      metadata: logMetadata,
-    },
-  });
+    });
 
-  return {
-    query: input.query,
-    normalizedQuery,
-    condition: {
-      id: condition.id,
-      slug: condition.slug,
-      name: condition.name,
-    },
-    dayStage: {
-      id: dayStage.id,
-      slug: dayStage.slug,
-      name: dayStage.name,
-    },
-    matchedType,
-    matchedEntity,
-    status: judgement.status,
-    confidenceGrade: judgement.confidenceGrade,
-    primaryReason: judgement.primaryReason,
-    secondaryReason: judgement.secondaryReason,
-    appliedTagSlugs: judgement.appliedTagSlugs,
-    topAppliedRules: judgement.topAppliedRules.map(toUiRule),
-    similarFoods,
-    recommendedMenus: recommendedMenus.map((menu) => ({
-      id: menu.id,
-      slug: menu.slug,
-      name: menu.name,
-      mealType: menu.mealType,
-      description: menu.description,
-      foods: menu.menuFoods.map((menuFood) => ({
-        id: menuFood.food.id,
-        name: menuFood.food.name,
-        roleLabel: menuFood.roleLabel,
-        quantityNote: menuFood.quantityNote,
+    return {
+      query: input.query,
+      normalizedQuery,
+      condition: {
+        id: condition.id,
+        slug: condition.slug,
+        name: condition.name,
+      },
+      dayStage: {
+        id: dayStage.id,
+        slug: dayStage.slug,
+        name: dayStage.name,
+      },
+      matchedType,
+      matchedEntity,
+      status: judgement.status,
+      confidenceGrade: judgement.confidenceGrade,
+      primaryReason: judgement.primaryReason,
+      secondaryReason: judgement.secondaryReason,
+      appliedTagSlugs: judgement.appliedTagSlugs,
+      topAppliedRules: judgement.topAppliedRules.map(toUiRule),
+      similarFoods,
+      recommendedMenus: recommendedMenus.map((menu) => ({
+        id: menu.id,
+        slug: menu.slug,
+        name: menu.name,
+        mealType: menu.mealType,
+        description: menu.description,
+        foods: menu.menuFoods.map((menuFood) => ({
+          id: menuFood.food.id,
+          name: menuFood.food.name,
+          roleLabel: menuFood.roleLabel,
+          quantityNote: menuFood.quantityNote,
+        })),
       })),
-    })),
-  };
+    };
+  } catch (error) {
+    logCheckFood("error", {
+      ...requestContext,
+      error: serializeError(error),
+    });
+    throw error;
+  }
 }
