@@ -91,14 +91,17 @@ function logCheckFood(step: string, payload: Record<string, unknown>) {
 async function measureStep<T>(
   step: string,
   requestContext: Record<string, unknown>,
+  timings: Record<string, number>,
   fn: () => Promise<T>,
 ): Promise<T> {
   const startedAt = Date.now();
   const result = await fn();
+  const durationMs = Date.now() - startedAt;
+  timings[step] = durationMs;
   logCheckFood("timing", {
     ...requestContext,
     step,
-    durationMs: Date.now() - startedAt,
+    durationMs,
   });
   return result;
 }
@@ -222,7 +225,6 @@ type DayStageCacheValue = {
     daysBefore: number | null;
   };
   stageRules: StageRule[];
-  recommendedMenus: RecommendedMenuWithFoods[];
 };
 
 type FoodGroupIndexEntry = {
@@ -235,6 +237,7 @@ type FoodGroupIndexEntry = {
 const staticCache = {
   conditions: new Map<string, ConditionCacheValue>(),
   stageBundles: new Map<string, DayStageCacheValue>(),
+  recommendedMenus: new Map<string, RecommendedMenuWithFoods[]>(),
   foodGroupIndex: null as FoodGroupIndexEntry[] | null,
 };
 
@@ -318,6 +321,7 @@ async function findAlias(normalizedQuery: string) {
 
 async function getFoodGroupIndex(
   requestContext: Record<string, unknown>,
+  timings: Record<string, number>,
 ): Promise<FoodGroupIndexEntry[]> {
   if (staticCache.foodGroupIndex) {
     logCheckFood("cache.hit", {
@@ -328,7 +332,7 @@ async function getFoodGroupIndex(
     return staticCache.foodGroupIndex;
   }
 
-  const groups = await measureStep("food_group_index_query", requestContext, async () =>
+  const groups = await measureStep("food_group_index_query", requestContext, timings, async () =>
     prisma.foodGroup.findMany({
       where: { isFallbackGroup: false },
       select: {
@@ -433,6 +437,7 @@ function toUiRule(rule: ExposedAppliedRule) {
 async function getConditionBySlug(
   conditionSlug: string,
   requestContext: Record<string, unknown>,
+  timings: Record<string, number>,
 ) {
   const cached = staticCache.conditions.get(conditionSlug);
   if (cached) {
@@ -444,7 +449,7 @@ async function getConditionBySlug(
     return cached;
   }
 
-  const condition = await measureStep("condition_query", requestContext, async () =>
+  const condition = await measureStep("condition_query", requestContext, timings, async () =>
     prisma.condition.findUnique({
       where: { slug: conditionSlug },
       select: {
@@ -467,6 +472,7 @@ async function getStageBundle(
   conditionId: string,
   dayStageSlug: string,
   requestContext: Record<string, unknown>,
+  timings: Record<string, number>,
 ) {
   const cacheKey = `${conditionId}:${dayStageSlug}`;
   const cached = staticCache.stageBundles.get(cacheKey);
@@ -480,7 +486,7 @@ async function getStageBundle(
     return cached;
   }
 
-  const dayStage = await measureStep("day_stage_query", requestContext, async () =>
+  const dayStage = await measureStep("day_stage_query", requestContext, timings, async () =>
     prisma.dayStage.findUnique({
       where: {
         conditionId_slug: {
@@ -501,20 +507,52 @@ async function getStageBundle(
     return null;
   }
 
-  const [rules, recommendedMenus] = await Promise.all([
-    measureStep("rule_query", requestContext, async () =>
-      prisma.judgementRule.findMany({
+  const rules = await measureStep("rule_query", requestContext, timings, async () =>
+    prisma.judgementRule.findMany({
         where: { dayStageId: dayStage.id },
         include: {
           foodTag: true,
         },
       }),
-    ),
-    measureStep("recommended_menus_query", requestContext, async () =>
+  );
+
+  const bundle = {
+    dayStage,
+    stageRules: buildStageRules(rules),
+  };
+
+  staticCache.stageBundles.set(cacheKey, bundle);
+  return bundle;
+}
+
+async function getRecommendedMenus(
+  conditionId: string,
+  dayStageId: string,
+  requestContext: Record<string, unknown>,
+  timings: Record<string, number>,
+) {
+  const cacheKey = `${conditionId}:${dayStageId}`;
+  const cached = staticCache.recommendedMenus.get(cacheKey);
+
+  if (cached) {
+    logCheckFood("cache.hit", {
+      ...requestContext,
+      cacheKey: "recommendedMenus",
+      recommendedMenusKey: cacheKey,
+      itemCount: cached.length,
+    });
+    return cached;
+  }
+
+  const recommendedMenus = await measureStep(
+    "recommended_menus_query",
+    requestContext,
+    timings,
+    async () =>
       prisma.recommendedMenu.findMany({
         where: {
           conditionId,
-          dayStageId: dayStage.id,
+          dayStageId,
         },
         include: {
           menuFoods: {
@@ -526,17 +564,10 @@ async function getStageBundle(
         },
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       }),
-    ),
-  ]);
+  );
 
-  const bundle = {
-    dayStage,
-    stageRules: buildStageRules(rules),
-    recommendedMenus,
-  };
-
-  staticCache.stageBundles.set(cacheKey, bundle);
-  return bundle;
+  staticCache.recommendedMenus.set(cacheKey, recommendedMenus);
+  return recommendedMenus;
 }
 
 export interface CheckFoodResult {
@@ -598,11 +629,12 @@ export async function checkFoodByQuery(input: {
     query: input.query,
     normalizedQuery,
   };
+  const timings: Record<string, number> = {};
 
   logCheckFood("start", requestContext);
 
   try {
-    const condition = await getConditionBySlug(input.conditionSlug, requestContext);
+    const condition = await getConditionBySlug(input.conditionSlug, requestContext, timings);
 
     logCheckFood("condition.result", {
       ...requestContext,
@@ -614,7 +646,12 @@ export async function checkFoodByQuery(input: {
       throw new CheckFoodError("요청한 condition을 찾을 수 없습니다", "NOT_FOUND");
     }
 
-    const stageBundle = await getStageBundle(condition.id, input.dayStageSlug, requestContext);
+    const stageBundle = await getStageBundle(
+      condition.id,
+      input.dayStageSlug,
+      requestContext,
+      timings,
+    );
 
     logCheckFood("dayStage.result", {
       ...requestContext,
@@ -634,6 +671,13 @@ export async function checkFoodByQuery(input: {
       sampleRuleSlugs: stageBundle.stageRules.slice(0, 5).map((rule) => rule.tagSlug),
     });
 
+    const recommendedMenusPromise = getRecommendedMenus(
+      condition.id,
+      stageBundle.dayStage.id,
+      requestContext,
+      timings,
+    );
+
     let matchedType: SearchMatchedType = "none";
     let matchedEntity: MatchedEntity = null;
     let candidateTags: CandidateTag[] = [];
@@ -643,8 +687,10 @@ export async function checkFoodByQuery(input: {
 
     const [exactFood, aliasMatch] = normalizedQuery
       ? await Promise.all([
-          measureStep("exact_food_query", requestContext, async () => findExactFood(normalizedQuery)),
-          measureStep("alias_query", requestContext, async () => findAlias(normalizedQuery)),
+          measureStep("exact_food_query", requestContext, timings, async () =>
+            findExactFood(normalizedQuery),
+          ),
+          measureStep("alias_query", requestContext, timings, async () => findAlias(normalizedQuery)),
         ])
       : [null, null];
 
@@ -684,7 +730,7 @@ export async function checkFoodByQuery(input: {
         slug: exactFood.slug,
         name: exactFood.name,
       };
-      candidateTags = await measureStep("tag_lookup", requestContext, async () =>
+      candidateTags = await measureStep("tag_lookup", requestContext, timings, async () =>
         Promise.resolve(toCandidateTagsFromFood(exactFood)),
       );
     } else if (aliasMatch) {
@@ -701,19 +747,19 @@ export async function checkFoodByQuery(input: {
           name: aliasMatch.food.name,
         },
       };
-      candidateTags = await measureStep("tag_lookup", requestContext, async () =>
+      candidateTags = await measureStep("tag_lookup", requestContext, timings, async () =>
         Promise.resolve(toCandidateTagsFromFood(aliasMatch.food)),
       );
     } else {
-      const foodGroupIndex = normalizedQuery ? await getFoodGroupIndex(requestContext) : [];
+      const foodGroupIndex = normalizedQuery ? await getFoodGroupIndex(requestContext, timings) : [];
       const foodGroupMatch = normalizedQuery ? matchFoodGroupIndex(normalizedQuery, foodGroupIndex) : null;
 
       if (foodGroupMatch) {
         const [foodGroup, representatives] = await Promise.all([
-          measureStep("food_group_query", requestContext, async () =>
+          measureStep("food_group_query", requestContext, timings, async () =>
             findFoodGroupDetail(foodGroupMatch.id),
           ),
-          measureStep("food_group_representatives_query", requestContext, async () =>
+          measureStep("food_group_representatives_query", requestContext, timings, async () =>
             findFoodGroupRepresentatives(foodGroupMatch.id),
           ),
         ]);
@@ -740,7 +786,7 @@ export async function checkFoodByQuery(input: {
             slug: foodGroup.slug,
             name: foodGroup.name,
           };
-          candidateTags = await measureStep("tag_lookup", requestContext, async () =>
+          candidateTags = await measureStep("tag_lookup", requestContext, timings, async () =>
             Promise.resolve(toCandidateTagsFromFoodGroup(foodGroup)),
           );
           similarFoods = representatives.map((food: FoodGroupRepresentative) => ({
@@ -763,7 +809,7 @@ export async function checkFoodByQuery(input: {
     }
 
     if (matchedFoodId) {
-      const similarRows = await measureStep("similar_foods_query", requestContext, async () =>
+      const similarRows = await measureStep("similar_foods_query", requestContext, timings, async () =>
         findSimilarFoods(matchedFoodId),
       );
 
@@ -774,7 +820,9 @@ export async function checkFoodByQuery(input: {
         note: item.note,
       }));
     } else if (!similarFoods.length) {
-      await measureStep("similar_foods_query", requestContext, async () => Promise.resolve([]));
+      await measureStep("similar_foods_query", requestContext, timings, async () =>
+        Promise.resolve([]),
+      );
     }
 
     logCheckFood("match.summary", {
@@ -802,10 +850,12 @@ export async function checkFoodByQuery(input: {
       usedFallbackReason: judgement.usedFallbackReason,
     });
 
+    const recommendedMenus = await recommendedMenusPromise;
+
     logCheckFood("recommendedMenus.result", {
       ...requestContext,
-      menuCount: stageBundle.recommendedMenus.length,
-      menuSlugs: stageBundle.recommendedMenus.map((menu) => menu.slug),
+      menuCount: recommendedMenus.length,
+      menuSlugs: recommendedMenus.map((menu) => menu.slug),
     });
 
     const logMetadata: Prisma.JsonObject = {
@@ -820,7 +870,7 @@ export async function checkFoodByQuery(input: {
       fallbackReasonUsed: judgement.usedFallbackReason,
     };
 
-    await measureStep("search_log_insert", requestContext, async () =>
+    void measureStep("search_log_insert", requestContext, timings, async () =>
       prisma.searchLog.create({
         data: {
           query: input.query,
@@ -834,19 +884,38 @@ export async function checkFoodByQuery(input: {
           metadata: logMetadata,
         },
       }),
-    );
-
-    logCheckFood("searchLog.created", {
-      ...requestContext,
-      matchedType,
-      matchedId,
-      resultStatus: judgement.status,
-      confidenceGrade: judgement.confidenceGrade,
-    });
+    )
+      .then(() => {
+        logCheckFood("searchLog.created", {
+          ...requestContext,
+          matchedType,
+          matchedId,
+          resultStatus: judgement.status,
+          confidenceGrade: judgement.confidenceGrade,
+        });
+      })
+      .catch((error) => {
+        logCheckFood("searchLog.error", {
+          ...requestContext,
+          error: serializeError(error),
+        });
+      });
 
     logCheckFood("total.duration", {
       ...requestContext,
       durationMs: Date.now() - startedAt,
+    });
+
+    const slowSteps = Object.entries(timings)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([step, durationMs]) => ({ step, durationMs }));
+
+    logCheckFood("profile.summary", {
+      ...requestContext,
+      totalDurationMs: Date.now() - startedAt,
+      timings,
+      slowSteps,
     });
 
     return {
@@ -871,7 +940,7 @@ export async function checkFoodByQuery(input: {
       appliedTagSlugs: judgement.appliedTagSlugs,
       topAppliedRules: judgement.topAppliedRules.map(toUiRule),
       similarFoods,
-      recommendedMenus: stageBundle.recommendedMenus.map((menu) => ({
+      recommendedMenus: recommendedMenus.map((menu) => ({
         id: menu.id,
         slug: menu.slug,
         name: menu.name,
