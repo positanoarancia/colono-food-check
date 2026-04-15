@@ -1,0 +1,319 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JudgementStatus {
+  allowed
+  caution
+  avoid
+}
+
+enum ConfidenceGrade {
+  A
+  B
+  C
+}
+
+enum SourceKind {
+  hospital
+  medical_center
+  academic
+  society
+  government
+  internal_guide
+}
+
+enum SimilarityType {
+  same_category
+  similar_texture
+  substitute
+  related_choice
+}
+
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
+enum SearchMatchedType {
+  exact_food
+  alias
+  food_group
+  fallback
+  none
+}
+
+model Condition {
+  id              String            @id @default(cuid())
+  slug            String            @unique
+  name            String
+  description     String?
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  dayStages       DayStage[]
+  recommendedMenus RecommendedMenu[]
+  searchLogs      SearchLog[]
+}
+
+model DayStage {
+  id              String            @id @default(cuid())
+  conditionId     String
+  slug            String
+  name            String
+  sequence        Int
+  daysBefore      Int?
+  description     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  condition       Condition         @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+  judgementRules  JudgementRule[]
+  recommendedMenus RecommendedMenu[]
+  searchLogs      SearchLog[]
+
+  @@unique([conditionId, slug])
+  @@unique([conditionId, sequence])
+  @@index([conditionId, sequence])
+}
+
+model FoodGroup {
+  id                String            @id @default(cuid())
+  slug              String            @unique
+  name              String
+  description       String?
+  parentGroupId     String?
+  sortOrder         Int               @default(0)
+  isFallbackGroup   Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  parentGroup       FoodGroup?        @relation("FoodGroupHierarchy", fields: [parentGroupId], references: [id])
+  childGroups       FoodGroup[]       @relation("FoodGroupHierarchy")
+  foods             Food[]
+  groupTags         FoodGroupTag[]
+  foodGroupSources  FoodGroupSource[]
+}
+
+model FoodTag {
+  id              String            @id @default(cuid())
+  slug            String            @unique
+  name            String
+  description     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  groupTags       FoodGroupTag[]
+  foodTags        FoodTagMap[]
+  judgementRules  JudgementRule[]
+}
+
+model FoodGroupTag {
+  id            String    @id @default(cuid())
+  foodGroupId   String
+  foodTagId     String
+  note          String?
+  weight        Int?
+  createdAt     DateTime  @default(now())
+  foodGroup     FoodGroup @relation(fields: [foodGroupId], references: [id], onDelete: Cascade)
+  foodTag       FoodTag   @relation(fields: [foodTagId], references: [id], onDelete: Cascade)
+
+  @@unique([foodGroupId, foodTagId])
+  @@index([foodTagId])
+}
+
+model Food {
+  id                  String               @id @default(cuid())
+  slug                String               @unique
+  name                String
+  normalizedName      String               @unique
+  primaryFoodGroupId  String
+  description         String?
+  defaultServing      String?
+  searchPriority      Int                  @default(0)
+  isRepresentative    Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  primaryFoodGroup    FoodGroup            @relation(fields: [primaryFoodGroupId], references: [id], onDelete: Restrict)
+  aliases             FoodAlias[]
+  tagMaps             FoodTagMap[]
+  sourceLinks         FoodSource[]
+  similarFrom         FoodSimilarity[]     @relation("FoodSimilarityBase")
+  similarTo           FoodSimilarity[]     @relation("FoodSimilaritySimilar")
+  recommendedInMenus  RecommendedMenuFood[]
+
+  @@index([primaryFoodGroupId])
+  @@index([name])
+}
+
+model FoodAlias {
+  id               String   @id @default(cuid())
+  foodId           String
+  alias            String
+  normalizedAlias  String   @unique
+  createdAt        DateTime @default(now())
+  food             Food     @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
+  @@index([foodId])
+}
+
+model FoodTagMap {
+  id          String    @id @default(cuid())
+  foodId      String
+  foodTagId   String
+  note        String?
+  weight      Int?
+  createdAt   DateTime  @default(now())
+  food        Food      @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  foodTag     FoodTag   @relation(fields: [foodTagId], references: [id], onDelete: Cascade)
+
+  @@unique([foodId, foodTagId])
+  @@index([foodTagId])
+}
+
+model JudgementRule {
+  id             String           @id @default(cuid())
+  dayStageId     String
+  foodTagId      String
+  status         JudgementStatus
+  rationale      String
+  priority       Int              @default(100)
+  sourceSummary  String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  dayStage       DayStage         @relation(fields: [dayStageId], references: [id], onDelete: Cascade)
+  foodTag        FoodTag          @relation(fields: [foodTagId], references: [id], onDelete: Cascade)
+  sourceLinks    RuleSource[]
+
+  @@unique([dayStageId, foodTagId])
+  @@index([dayStageId, status])
+}
+
+model FoodSimilarity {
+  id              String         @id @default(cuid())
+  baseFoodId      String
+  similarFoodId   String
+  similarityType  SimilarityType
+  note            String?
+  score           Int?
+  createdAt       DateTime       @default(now())
+  baseFood        Food           @relation("FoodSimilarityBase", fields: [baseFoodId], references: [id], onDelete: Cascade)
+  similarFood     Food           @relation("FoodSimilaritySimilar", fields: [similarFoodId], references: [id], onDelete: Cascade)
+
+  @@unique([baseFoodId, similarFoodId])
+  @@index([similarFoodId])
+}
+
+model RecommendedMenu {
+  id              String                @id @default(cuid())
+  conditionId     String
+  dayStageId      String
+  slug            String
+  name            String
+  description     String?
+  mealType        MealType?
+  statusHint      JudgementStatus?
+  sortOrder       Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  condition       Condition             @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+  dayStage        DayStage              @relation(fields: [dayStageId], references: [id], onDelete: Cascade)
+  menuFoods       RecommendedMenuFood[]
+
+  @@unique([conditionId, dayStageId, slug])
+  @@index([conditionId, dayStageId, sortOrder])
+}
+
+model RecommendedMenuFood {
+  id                 String           @id @default(cuid())
+  recommendedMenuId  String
+  foodId             String
+  roleLabel          String?
+  quantityNote       String?
+  sortOrder          Int              @default(0)
+  recommendedMenu    RecommendedMenu  @relation(fields: [recommendedMenuId], references: [id], onDelete: Cascade)
+  food               Food             @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
+  @@unique([recommendedMenuId, foodId])
+  @@index([foodId])
+}
+
+model Source {
+  id                String            @id @default(cuid())
+  slug              String            @unique
+  name              String
+  kind              SourceKind
+  url               String?
+  publisher         String?
+  publishedAt       DateTime?
+  note              String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  foodSources       FoodSource[]
+  foodGroupSources  FoodGroupSource[]
+  ruleSources       RuleSource[]
+}
+
+model FoodSource {
+  id            String   @id @default(cuid())
+  foodId        String
+  sourceId      String
+  evidenceNote  String?
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  food          Food     @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  source        Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([foodId, sourceId])
+  @@index([sourceId])
+}
+
+model FoodGroupSource {
+  id            String    @id @default(cuid())
+  foodGroupId   String
+  sourceId      String
+  evidenceNote  String?
+  isPrimary     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  foodGroup     FoodGroup @relation(fields: [foodGroupId], references: [id], onDelete: Cascade)
+  source        Source    @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([foodGroupId, sourceId])
+  @@index([sourceId])
+}
+
+model RuleSource {
+  id            String         @id @default(cuid())
+  judgementRuleId String
+  sourceId      String
+  evidenceNote  String?
+  createdAt     DateTime       @default(now())
+  judgementRule JudgementRule  @relation(fields: [judgementRuleId], references: [id], onDelete: Cascade)
+  source        Source         @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([judgementRuleId, sourceId])
+  @@index([sourceId])
+}
+
+model SearchLog {
+  id               BigInt            @id @default(autoincrement())
+  query            String
+  normalizedQuery  String
+  conditionId      String
+  dayStageId       String?
+  matchedType      SearchMatchedType
+  matchedId        String?
+  resultStatus     JudgementStatus?
+  confidenceGrade  ConfidenceGrade?
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  condition        Condition         @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+  dayStage         DayStage?         @relation(fields: [dayStageId], references: [id], onDelete: SetNull)
+
+  @@index([normalizedQuery])
+  @@index([conditionId, dayStageId, createdAt])
+}
