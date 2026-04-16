@@ -1004,34 +1004,36 @@ export default function HomePage() {
 
         .detail-group {
           display: grid;
-          gap: 6px;
+          gap: 10px;
           margin-top: 16px;
           max-width: 480px;
         }
 
         .detail-group strong {
-          font-size: 14px;
+          font-size: 16px;
           line-height: 1.6;
-          color: #4b5563;
-          font-weight: 500;
+          color: #374151;
+          font-weight: 600;
         }
 
         .detail-list {
           margin: 0;
           padding-left: 18px;
           display: grid;
-          gap: 4px;
+          gap: 8px;
         }
 
         .detail-list li {
           color: #6b7280;
+          font-size: 15px;
           font-weight: 400;
         }
 
         .reference-link {
           color: var(--primary);
           text-decoration: none;
-          font-weight: 600;
+          font-size: 15px;
+          font-weight: 500;
         }
 
         .reference-link:hover {
