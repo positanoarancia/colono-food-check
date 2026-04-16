@@ -11,11 +11,16 @@ export interface CandidateTag {
 }
 
 export interface StageRule {
+  id: string;
   tagId: string;
   tagSlug: string;
   status: JudgementStatus;
   rationale: string;
   priority: number;
+  references: Array<{
+    label: string;
+    url: string;
+  }>;
 }
 
 export interface JudgementInput {
@@ -36,6 +41,10 @@ export interface ExposedAppliedRule {
   status: JudgementStatus;
   rationale: string;
   source: "food" | "food_group";
+  references: Array<{
+    label: string;
+    url: string;
+  }>;
 }
 
 export interface JudgementResult {
@@ -97,6 +106,7 @@ export function resolveJudgement(input: JudgementInput): JudgementResult {
     status: rule.status,
     rationale: rule.rationale,
     source: rule.source,
+    references: rule.references,
   }));
   const primaryReason =
     topAppliedRules[0]?.rationale ??

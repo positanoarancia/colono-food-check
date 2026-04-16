@@ -3,7 +3,15 @@ import test from "node:test";
 
 import { resolveJudgement } from "../src/lib/judgement-engine";
 
-const d5Rules = [
+function withRuleDefaults<T extends { tagId: string }>(rules: T[]) {
+  return rules.map((rule, index) => ({
+    ...rule,
+    id: `rule-${index}-${rule.tagId}`,
+    references: [],
+  }));
+}
+
+const d5Rules = withRuleDefaults([
   { tagId: "low", tagSlug: "low-fiber", status: "allowed", rationale: "섬유질이 적어 장에 잔여물이 남을 가능성이 상대적으로 낮습니다.", priority: 30 },
   { tagId: "soft", tagSlug: "soft-food", status: "allowed", rationale: "부드러운 질감이라 장에 부담이 비교적 적습니다.", priority: 40 },
   { tagId: "clear", tagSlug: "clear-broth", status: "allowed", rationale: "건더기 없는 맑은 국물은 검사 준비 식단에 비교적 무난합니다.", priority: 20 },
@@ -19,9 +27,9 @@ const d5Rules = [
   { tagId: "seaweed", tagSlug: "seaweed", status: "avoid", rationale: "해조류는 질긴 섬유가 많아 장 정결에 불리할 수 있습니다.", priority: 5 },
   { tagId: "vegetable", tagSlug: "vegetables-heavy", status: "avoid", rationale: "채소 비중이 높으면 섬유질과 잔사 부담이 커집니다.", priority: 6 },
   { tagId: "namul", tagSlug: "namul", status: "avoid", rationale: "나물류는 줄기와 잎 섬유가 남기 쉬워 피하는 편이 안전합니다.", priority: 7 },
-];
+]);
 
-const d3Rules = [
+const d3Rules = withRuleDefaults([
   { tagId: "low", tagSlug: "low-fiber", status: "allowed", rationale: "저섬유 음식은 3일 전 준비식의 기본 축입니다.", priority: 30 },
   { tagId: "soft", tagSlug: "soft-food", status: "allowed", rationale: "부드러운 음식은 장 자극과 잔사 부담이 상대적으로 적습니다.", priority: 40 },
   { tagId: "clear", tagSlug: "clear-broth", status: "allowed", rationale: "건더기 없는 맑은 국물은 3일 전에도 비교적 안전합니다.", priority: 20 },
@@ -37,9 +45,9 @@ const d3Rules = [
   { tagId: "spicy", tagSlug: "spicy-seasoning", status: "avoid", rationale: "매운 양념은 장 자극과 식단 이탈 가능성을 높여 피하는 편이 좋습니다.", priority: 9 },
   { tagId: "fried", tagSlug: "fried", status: "avoid", rationale: "튀김은 기름이 많아 소화와 장 정결 모두에 불리합니다.", priority: 10 },
   { tagId: "chunky", tagSlug: "chunky", status: "avoid", rationale: "건더기가 많아 장에 남는 잔사가 많아질 수 있습니다.", priority: 11 },
-];
+]);
 
-const d1Rules = [
+const d1Rules = withRuleDefaults([
   { tagId: "clear", tagSlug: "clear-broth", status: "allowed", rationale: "전날에는 건더기 없는 맑은 유동식이 가장 안전한 선택입니다.", priority: 1 },
   { tagId: "low", tagSlug: "low-fiber", status: "caution", rationale: "저섬유라도 고형식은 전날 기준으로는 제한적으로만 보는 편이 안전합니다.", priority: 40 },
   { tagId: "soft", tagSlug: "soft-food", status: "caution", rationale: "부드러운 음식이라도 전날에는 맑은 유동식보다 우선하지 않습니다.", priority: 50 },
@@ -55,7 +63,7 @@ const d1Rules = [
   { tagId: "fried", tagSlug: "fried", status: "avoid", rationale: "튀김은 소화 부담이 커 전날 식단으로는 부적합합니다.", priority: 11 },
   { tagId: "processed", tagSlug: "processed", status: "avoid", rationale: "가공식품은 재료와 조미가 복합적이라 전날에는 보수적으로 금지합니다.", priority: 14 },
   { tagId: "chunky", tagSlug: "chunky", status: "avoid", rationale: "건더기가 많아 검사 직전 식단으로는 적합하지 않습니다.", priority: 13 },
-];
+]);
 
 const representativeCases = [
   { food: "흰죽", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },

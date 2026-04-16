@@ -24,6 +24,10 @@ type CheckResponse = {
     status: "allowed" | "caution" | "avoid";
     rationale: string;
     source: "food" | "food_group";
+    references: Array<{
+      label: string;
+      url: string;
+    }>;
   }>;
   similarFoods: Array<{
     id: string;
@@ -63,7 +67,7 @@ const stageOptions = [
   },
   {
     value: "d1",
-    label: "전날 식단",
+    label: "전날",
     shortLabel: "전날",
     daysLabel: "1일 전",
     resultLabel: "1일 전",
@@ -93,31 +97,17 @@ const statusConfig = {
   },
 } as const;
 
-const mealTypeLabel: Record<string, string> = {
-  breakfast: "아침",
-  lunch: "점심",
-  dinner: "저녁",
-  snack: "간식",
-};
-
-const tagLabel: Record<string, string> = {
-  "low-fiber": "저섬유",
-  "soft-food": "부드러운 음식",
-  "clear-broth": "맑은 국물",
-  "high-fiber": "고섬유",
+const detailBadgeLabel: Record<string, string> = {
+  "vegetables-heavy": "채소 많음",
+  "high-fiber": "섬유질 많음",
+  chunky: "건더기 많음",
+  "spicy-seasoning": "매운 양념",
+  fried: "기름진 음식",
   seeded: "씨 있음",
   "with-peel": "껍질 있음",
-  "whole-grain": "잡곡",
-  nuts: "견과류",
-  seaweed: "해조류",
-  "vegetables-heavy": "채소 많음",
-  namul: "나물류",
-  "spicy-seasoning": "매운 양념",
-  fried: "튀김",
-  processed: "가공식품",
-  chunky: "건더기 많음",
   dairy: "유제품",
-  "red-purple": "적색·보라색",
+  "clear-broth": "맑은 국물",
+  "soft-food": "부드러운 음식",
 };
 
 function getMatchedSummary(result: CheckResponse) {
@@ -145,17 +135,6 @@ function getFallbackCopy() {
 
 function getStageLabel(dayStageSlug: string) {
   return stageOptions.find((option) => option.value === dayStageSlug)?.resultLabel ?? dayStageSlug;
-}
-
-function normalizeMenuDescription(description: string | null) {
-  if (!description) {
-    return "부담 적은 식단";
-  }
-
-  return description
-    .replaceAll("저잔사 중심 식단", "부담 적은 식단")
-    .replaceAll("저잔사 식단", "부담 적은 식단")
-    .replaceAll("저잔사", "부담 적은");
 }
 
 function getFoodTraits(result: CheckResponse) {
@@ -214,46 +193,29 @@ function getStageImportantPoint(dayStageSlug: string) {
 }
 
 function getReferenceBadges(result: CheckResponse) {
-  const badges: string[] = [];
-
-  if (result.matchedType === "exact_food") {
-    badges.push("직접 확인된 음식");
-  } else if (result.matchedType === "alias") {
-    badges.push("같은 음식 이름으로 확인");
-  } else if (result.matchedType === "food_group") {
-    badges.push("비슷한 음식 기준 참고");
-  } else if (result.matchedType === "fallback") {
-    badges.push("등록 전 음식");
-  }
-
-  if (result.confidenceGrade === "A") {
-    badges.push("직접 기준 확인");
-  } else if (result.confidenceGrade === "B") {
-    badges.push("비슷한 기준 참고");
-  } else {
-    badges.push("보수적 안내");
-  }
-
-  return badges.slice(0, 2);
+  return result.appliedTagSlugs
+    .map((tag) => detailBadgeLabel[tag])
+    .filter((value): value is string => Boolean(value))
+    .slice(0, 3);
 }
 
 function getReferencePoints(result: CheckResponse) {
   if (result.matchedType === "fallback") {
-    return ["등록된 기준이 없어 안전한 쪽으로 먼저 안내했어요"];
+    return ["등록된 음식 정보를 먼저 확인했어요"];
   }
 
   const points: string[] = [];
 
   if (result.topAppliedRules.some((rule) => rule.source === "food")) {
-    points.push("직접 확인된 음식 기준을 봤어요");
+    points.push("등록된 음식 정보를 먼저 확인했어요");
   }
 
   if (result.topAppliedRules.some((rule) => rule.source === "food_group")) {
-    points.push("비슷한 음식 기준도 함께 참고했어요");
+    points.push("필요할 때는 비슷한 음식 정보도 함께 참고했어요");
   }
 
   if (points.length === 0) {
-    points.push(getMatchedSummary(result));
+    points.push("등록된 음식 정보를 먼저 확인했어요");
   }
 
   return points.slice(0, 2);
@@ -263,7 +225,7 @@ function getShortReasons(result: CheckResponse) {
   if (result.matchedType === "fallback") {
     return {
       primary: "기준이 없어 조심하는 편이 좋아요",
-      secondary: "대신 먹을 수 있는 음식부터 보세요",
+      secondary: "비슷한 음식도 함께 확인해보세요",
     };
   }
 
@@ -273,20 +235,17 @@ function getShortReasons(result: CheckResponse) {
     if (tagSet.has("clear-broth")) {
       return {
         primary: "맑고 부담이 적어서 괜찮아요",
-        secondary: "지금 단계에 비교적 잘 맞아요",
       };
     }
 
     if (tagSet.has("low-fiber") || tagSet.has("soft-food")) {
       return {
         primary: "부담이 적어서 지금은 괜찮아요",
-        secondary: "지금 단계에 비교적 안전한 편이에요",
       };
     }
 
     return {
       primary: "지금은 비교적 괜찮은 편이에요",
-      secondary: "양이 많지 않으면 더 좋아요",
     };
   }
 
@@ -294,20 +253,17 @@ function getShortReasons(result: CheckResponse) {
     if (tagSet.has("processed")) {
       return {
         primary: "가공이 많아 조심하는 편이 좋아요",
-        secondary: "양을 줄이거나 순한 음식이 나아요",
       };
     }
 
     if (tagSet.has("dairy")) {
       return {
         primary: "유제품이라 속이 불편할 수 있어요",
-        secondary: "적게 먹거나 다른 음식이 나아요",
       };
     }
 
     return {
       primary: "지금은 부담이 될 수 있어요",
-      secondary: "양을 줄이면 조금 더 안전해요",
     };
   }
 
@@ -321,21 +277,21 @@ function getShortReasons(result: CheckResponse) {
   if (tagSet.has("seeded") || tagSet.has("with-peel")) {
       return {
         primary: "씨나 껍질이 있어 지금은 피하세요",
-        secondary: "잔사가 적은 음식이 더 잘 맞아요",
+        secondary: "대신 더 부드러운 음식이 좋아요",
       };
     }
 
   if (tagSet.has("spicy-seasoning") || tagSet.has("fried")) {
       return {
         primary: "매운 양념이나 기름이 부담이 돼요",
-        secondary: "대신 맑고 순한 음식이 좋아요",
+        secondary: "대신 더 부드러운 음식이 좋아요",
       };
     }
 
   if (tagSet.has("chunky")) {
     return {
       primary: "건더기가 많아서 장에 남을 수 있어요",
-      secondary: "대신 맑고 부드러운 음식이 좋아요",
+      secondary: "대신 더 부드러운 음식이 좋아요",
     };
   }
 
@@ -471,15 +427,24 @@ export default function HomePage() {
   const detailTraits = result ? getFoodTraits(result) : [];
   const detailBadges = result ? getReferenceBadges(result) : [];
   const detailReferencePoints = result ? getReferencePoints(result) : [];
+  const detailReferences = result
+    ? result.topAppliedRules
+        .flatMap((rule) => rule.references)
+        .filter(
+          (reference, index, array) =>
+            array.findIndex((item) => item.url === reference.url) === index,
+        )
+        .slice(0, 2)
+    : [];
 
   return (
     <main className="page">
       <div className="page-shell">
         <section className="hero-card">
-          <div className="eyebrow">대장내시경 음식체크 by 건강신호등</div>
+          <div className="eyebrow">건강신호등</div>
           <div className="hero-copy-block">
-            <h1 className="hero-title">대장내시경 전 음식 확인</h1>
-            <p className="hero-copy">지금 먹어도 되는지 확인해보세요</p>
+            <h1 className="hero-title">대장내시경 전에 먹어도 될까?</h1>
+            <p className="hero-copy">음식을 검색하면 바로 확인할 수 있어요</p>
           </div>
 
           <form onSubmit={handleSubmit} className="search-panel">
@@ -522,7 +487,7 @@ export default function HomePage() {
             </div>
 
             <div className="quick-row">
-              <div className="quick-chips">
+              <div className="quick-chips" role="list" aria-label="예시 음식">
                 {quickExamples.map((example) => (
                   <button
                     key={example}
@@ -553,6 +518,72 @@ export default function HomePage() {
                   {shortReasons?.secondary ? (
                     <p className="secondary-reason">{shortReasons.secondary}</p>
                   ) : null}
+                  {result.matchedType === "fallback" ? (
+                    <div className="fallback-callout">
+                      <p className="fallback-text is-primary">{getFallbackCopy().title}</p>
+                      <p>{getFallbackCopy().body}</p>
+                    </div>
+                  ) : null}
+                  {detailBadges.length > 0 ? (
+                    <div className="tag-row">
+                      {detailBadges.map((badge) => (
+                        <span key={badge} className="tag-pill" style={{ background: status.chip }}>
+                          {badge}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {(detailTraits.length > 0 || detailReferencePoints.length > 0) ? (
+                    <details className="details-box">
+                      <summary>
+                        <span>왜 이렇게 안내하나요?</span>
+                        <span className="summary-chevron" aria-hidden="true">
+                          ▾
+                        </span>
+                      </summary>
+                      <div className="detail-group">
+                        <strong>이 음식의 특징</strong>
+                        <ul className="detail-list">
+                          {detailTraits.map((trait) => (
+                            <li key={trait}>{trait}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="detail-group">
+                        <strong>지금 왜 주의해야 하나요?</strong>
+                        <ul className="detail-list">
+                          <li>{getStageImportantPoint(result.dayStage.slug)}</li>
+                        </ul>
+                      </div>
+                      <div className="detail-group">
+                        <strong>판단에 참고한 내용</strong>
+                        <ul className="detail-list">
+                          {detailReferencePoints.map((point) => (
+                            <li key={point}>{point}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      {detailReferences.length > 0 ? (
+                        <div className="detail-group">
+                          <strong>참고 근거</strong>
+                          <ul className="detail-list">
+                            {detailReferences.map((reference) => (
+                              <li key={reference.url}>
+                                <a
+                                  href={reference.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="reference-link"
+                                >
+                                  {reference.label}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </details>
+                  ) : null}
                 </div>
               </div>
             </article>
@@ -577,84 +608,20 @@ export default function HomePage() {
                   </div>
                 </article>
               ) : null}
+            </section>
 
-              <article className="panel-card">
-                <div className="panel-header">
-                  <h3>추천 메뉴</h3>
+            <section className="guide-section">
+              <h3 className="guide-heading">FAQ / 가이드</h3>
+              <div className="guide-list">
+                <div className="guide-item">
+                  <strong>검사 전 어떤 음식 피해야 하나요?</strong>
+                  <p>채소, 잡곡, 견과류, 해조류처럼 장에 남기 쉬운 음식은 먼저 줄이는 편이 좋아요.</p>
                 </div>
-                {result.recommendedMenus.length > 0 ? (
-                  <div className="menu-list">
-                    {result.recommendedMenus.map((menu) => (
-                      <div key={menu.id} className="menu-card">
-                        {menu.mealType ? (
-                          <span className="menu-badge">{mealTypeLabel[menu.mealType] ?? menu.mealType}</span>
-                        ) : null}
-                        <strong className="menu-title">
-                          {menu.mealType
-                            ? `${getStageLabel(result.dayStage.slug)} ${mealTypeLabel[menu.mealType] ?? menu.mealType} 추천`
-                            : menu.name}
-                        </strong>
-                        <p>{normalizeMenuDescription(menu.description)}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="empty-copy">지금 추천할 메뉴는 아직 없어요.</p>
-                )}
-              </article>
-
-              <article className="panel-card">
-                {result.matchedType === "fallback" ? (
-                  <div className="fallback-callout">
-                    <p className="fallback-text is-primary">{getFallbackCopy().title}</p>
-                    <p>{getFallbackCopy().body}</p>
-                  </div>
-                ) : null}
-
-                {(detailTraits.length > 0 || result.appliedTagSlugs.length > 0) ? (
-                  <details className="details-box">
-                    <summary>왜 이렇게 안내하나요?</summary>
-                    <div className="support-row">
-                      {detailBadges.map((badge) => (
-                        <span key={badge} className="support-pill">
-                          {badge}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="detail-group">
-                      <strong>1. 이 음식의 특징</strong>
-                      <ul className="detail-list">
-                        {detailTraits.map((trait) => (
-                          <li key={trait}>{trait}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="detail-group">
-                      <strong>2. 지금 단계에서 중요한 점</strong>
-                      <ul className="detail-list">
-                        <li>{getStageImportantPoint(result.dayStage.slug)}</li>
-                      </ul>
-                    </div>
-                    <div className="detail-group">
-                      <strong>3. 참고 기준</strong>
-                      <ul className="detail-list">
-                        {detailReferencePoints.map((point) => (
-                          <li key={point}>{point}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    {result.appliedTagSlugs.length > 0 ? (
-                      <div className="tag-row">
-                        {result.appliedTagSlugs.slice(0, 4).map((tag) => (
-                          <span key={tag} className="tag-pill" style={{ background: status.chip }}>
-                            {tagLabel[tag] ?? tag}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                  </details>
-                ) : null}
-              </article>
+                <div className="guide-item">
+                  <strong>언제부터 식단 조절하나요?</strong>
+                  <p>보통 4–5일 전부터 섬유질 많은 음식을 줄이고, 2–3일 전부터는 더 가볍게 보는 편이 안전해요.</p>
+                </div>
+              </div>
             </section>
           </section>
         ) : null}
@@ -744,8 +711,7 @@ export default function HomePage() {
           display: grid;
           gap: 12px;
           margin-top: 20px;
-          padding-top: 16px;
-          border-top: 1px solid var(--line);
+          padding-top: 8px;
         }
 
         .stage-row {
@@ -805,7 +771,6 @@ export default function HomePage() {
 
         .search-input-wrap {
           display: grid;
-          gap: 8px;
         }
 
         .search-input {
@@ -864,8 +829,17 @@ export default function HomePage() {
 
         .quick-chips {
           display: flex;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
           gap: 8px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 2px;
+        }
+
+        .quick-chips::-webkit-scrollbar {
+          display: none;
         }
 
         .quick-chip {
@@ -876,6 +850,8 @@ export default function HomePage() {
           color: var(--text);
           cursor: pointer;
           font-weight: 600;
+          flex: 0 0 auto;
+          white-space: nowrap;
         }
 
         .error-text {
@@ -887,14 +863,13 @@ export default function HomePage() {
         .result-stack {
           display: grid;
           gap: 0;
-          border-top: 1px solid var(--line);
         }
 
         .result-hero {
           padding: 20px 0;
           background: transparent !important;
           border-left: 4px solid currentColor;
-          padding-left: 14px;
+          padding-left: 16px;
         }
 
         .result-main {
@@ -926,7 +901,6 @@ export default function HomePage() {
         .primary-reason,
         .secondary-reason,
         .fallback-callout p,
-        .menu-card p,
         .empty-copy,
         .detail-list li {
           color: var(--muted);
@@ -934,8 +908,8 @@ export default function HomePage() {
         }
 
         .decision-context {
-          margin: 0;
-          color: var(--muted);
+          margin: 6px 0 0;
+          color: #8b95a1;
           font-size: 14px;
           font-weight: 500;
           max-width: 480px;
@@ -943,7 +917,7 @@ export default function HomePage() {
         }
 
         .primary-reason {
-          margin: 4px 0 0;
+          margin: 10px 0 0;
           font-size: 20px;
           color: var(--text);
           font-weight: 600;
@@ -952,10 +926,11 @@ export default function HomePage() {
         }
 
         .secondary-reason {
-          margin: -1px 0 0;
+          margin: 6px 0 0;
           font-size: 16px;
           line-height: 1.6;
           max-width: 480px;
+          color: #8b95a1;
         }
 
         .action-grid {
@@ -964,10 +939,9 @@ export default function HomePage() {
         }
 
         .fallback-callout {
-          padding: 12px 0 0;
+          padding: 8px 0 0;
           background: transparent;
           border: none;
-          border-top: 1px solid var(--line);
         }
 
         .fallback-text {
@@ -982,42 +956,50 @@ export default function HomePage() {
           margin-bottom: 2px;
         }
 
-        .support-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 10px;
-        }
-
-        .support-pill {
-          display: inline-flex;
-          align-items: center;
-          border-radius: 999px;
-          padding: 6px 10px;
-          background: #f3f4f6;
-          border: 1px solid var(--line);
-          color: var(--muted);
-          font-size: 12px;
-          font-weight: 700;
-        }
-
         .details-box {
           border: none;
           background: transparent;
-          padding: 0;
+          padding: 10px 0 0;
         }
 
         .details-box summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          width: 100%;
           cursor: pointer;
           font-weight: 700;
           color: var(--text);
           list-style: none;
           font-size: 14px;
           line-height: 1.6;
+          padding: 8px 0;
+          transition: color 0.15s ease, opacity 0.15s ease;
         }
 
         .details-box summary::-webkit-details-marker {
           display: none;
+        }
+
+        .details-box summary:hover {
+          color: var(--primary);
+          background: rgba(47, 111, 237, 0.04);
+        }
+
+        .details-box summary:active {
+          opacity: 0.7;
+        }
+
+        .summary-chevron {
+          font-size: 16px;
+          color: var(--primary);
+          font-weight: 700;
+          transition: transform 0.15s ease, color 0.15s ease;
+        }
+
+        .details-box[open] .summary-chevron {
+          transform: rotate(180deg);
         }
 
         .detail-group {
@@ -1030,7 +1012,8 @@ export default function HomePage() {
         .detail-group strong {
           font-size: 14px;
           line-height: 1.6;
-          color: var(--text);
+          color: #4b5563;
+          font-weight: 500;
         }
 
         .detail-list {
@@ -1040,25 +1023,48 @@ export default function HomePage() {
           gap: 4px;
         }
 
+        .detail-list li {
+          color: #6b7280;
+          font-weight: 400;
+        }
+
+        .reference-link {
+          color: var(--primary);
+          text-decoration: none;
+          font-weight: 600;
+        }
+
+        .reference-link:hover {
+          text-decoration: underline;
+        }
+
         .tag-row {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
-          margin-top: 12px;
+          margin-top: 10px;
+          margin-bottom: 14px;
+          max-width: 480px;
         }
 
         .tag-pill {
+          display: inline-flex;
+          align-items: center;
           border-radius: 999px;
           padding: 6px 10px;
           font-size: 12px;
           font-weight: 700;
-          color: var(--text);
+          color: #4b5563;
+          border: 1px solid #d8dde6;
         }
 
         .panel-card {
           background: transparent;
-          padding: 20px 0;
-          border-top: 1px solid var(--line);
+          padding: 32px 0 0;
+        }
+
+        .guide-section {
+          padding: 48px 0 0;
         }
 
         .panel-header {
@@ -1076,7 +1082,6 @@ export default function HomePage() {
           letter-spacing: -0.02em;
         }
 
-        .menu-list,
         .action-chip-list {
           display: grid;
           gap: 10px;
@@ -1087,14 +1092,7 @@ export default function HomePage() {
           gap: 8px;
         }
 
-        .menu-card p {
-          margin: 6px 0 0;
-          max-width: 480px;
-          line-height: 1.6;
-        }
-
-        .choice-button,
-        .menu-card {
+        .choice-button {
           width: 100%;
           text-align: left;
           padding: 12px 14px;
@@ -1117,27 +1115,37 @@ export default function HomePage() {
           background: #f8fbff;
         }
 
-        .menu-card strong {
-          color: var(--text);
-          font-size: 16px;
+        .guide-heading {
+          margin: 0;
+          font-size: 18px;
           line-height: 1.5;
+          color: var(--text);
         }
 
-        .menu-title {
+        .guide-list {
+          display: grid;
+          gap: 10px;
+          margin-top: 12px;
+        }
+
+        .guide-item {
+          border: 1px solid var(--line);
+          background: #ffffff;
+          border-radius: 12px;
+          padding: 14px 16px;
+          color: var(--text);
+        }
+
+        .guide-item strong {
           display: block;
-          max-width: 480px;
+          font-size: 15px;
+          line-height: 1.6;
         }
 
-        .menu-badge {
-          display: inline-flex;
-          align-items: center;
-          margin-bottom: 8px;
-          padding: 4px 8px;
-          border-radius: 999px;
-          background: #eef4ff;
-          color: var(--primary);
-          font-size: 12px;
-          font-weight: 700;
+        .guide-item p {
+          margin: 6px 0 0;
+          color: var(--muted);
+          line-height: 1.6;
         }
 
         .empty-copy {

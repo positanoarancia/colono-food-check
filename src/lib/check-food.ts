@@ -403,19 +403,47 @@ async function findSimilarFoods(foodId: string) {
 
 function buildStageRules(
   rules: Array<{
+    id: string;
     foodTagId: string;
     status: "allowed" | "caution" | "avoid";
     rationale: string;
     priority: number;
     foodTag: { slug: string };
+    sourceLinks: Array<{
+      source: {
+        name: string;
+        publisher: string | null;
+        url: string | null;
+      };
+    }>;
   }>,
 ): StageRule[] {
   return rules.map((rule) => ({
+    id: rule.id,
     tagId: rule.foodTagId,
     tagSlug: rule.foodTag.slug,
     status: rule.status,
     rationale: rule.rationale,
     priority: rule.priority,
+    references: rule.sourceLinks
+      .map((link) => {
+        if (!link.source.url) {
+          return null;
+        }
+
+        return {
+          label: link.source.name,
+          url: link.source.url,
+        };
+      })
+      .filter(
+        (
+          value,
+        ): value is {
+          label: string;
+          url: string;
+        } => Boolean(value),
+      ),
   }));
 }
 
@@ -431,6 +459,7 @@ function toUiRule(rule: ExposedAppliedRule) {
     status: rule.status,
     rationale: rule.rationale,
     source: rule.source,
+    references: rule.references,
   };
 }
 
@@ -508,10 +537,21 @@ async function getStageBundle(
   }
 
   const rules = await measureStep("rule_query", requestContext, timings, async () =>
-    prisma.judgementRule.findMany({
+      prisma.judgementRule.findMany({
         where: { dayStageId: dayStage.id },
         include: {
           foodTag: true,
+          sourceLinks: {
+            include: {
+              source: {
+                select: {
+                  name: true,
+                  publisher: true,
+                  url: true,
+                },
+              },
+            },
+          },
         },
       }),
   );
@@ -983,6 +1023,7 @@ export async function checkFoodByQuery(input: {
         status: rule.status,
         rationale: rule.rationale,
         source: rule.source,
+        references: rule.references,
       })),
       matchedEntityType: matchedEntity?.type ?? null,
       fallbackReasonUsed: judgement.usedFallbackReason,
