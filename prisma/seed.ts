@@ -29,7 +29,7 @@ const dayStages = [
     name: "3일 전",
     sequence: 2,
     daysBefore: 3,
-    description: "저잔사 식단 중심으로 전환하는 단계",
+    description: "부담 적은 식단 중심으로 전환하는 단계",
   },
   {
     id: "stage_colonoscopy_d1",
@@ -428,7 +428,7 @@ const recommendedMenus = [
     dayStageId: "stage_colonoscopy_d3",
     slug: "d3-breakfast",
     name: "3일 전 아침 추천",
-    description: "저잔사 중심 식단",
+    description: "부담 적은 식단",
     mealType: "breakfast" as const,
     statusHint: "allowed" as const,
     sortOrder: 1,

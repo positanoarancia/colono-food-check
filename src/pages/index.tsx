@@ -47,10 +47,28 @@ type CheckResponse = {
 };
 
 const stageOptions = [
-  { value: "d5", label: "5일 전", hint: "비교적 여유 있는 단계" },
-  { value: "d3", label: "3일 전", hint: "저잔사 식단 중심" },
-  { value: "d1", label: "1일 전", hint: "가장 엄격한 단계" },
-];
+  {
+    value: "d5",
+    label: "초기 준비",
+    shortLabel: "초기 준비",
+    daysLabel: "4–5일 전",
+    resultLabel: "4–5일 전",
+  },
+  {
+    value: "d3",
+    label: "준비 식단",
+    shortLabel: "준비 식단",
+    daysLabel: "2–3일 전",
+    resultLabel: "2–3일 전",
+  },
+  {
+    value: "d1",
+    label: "전날 식단",
+    shortLabel: "전날",
+    daysLabel: "1일 전",
+    resultLabel: "1일 전",
+  },
+] as const;
 
 const quickExamples = ["바나나", "라면", "김치찌개", "흰죽", "샐러드", "카스테라"];
 
@@ -62,50 +80,18 @@ const statusConfig = {
     chip: "#EAF8EF",
   },
   caution: {
-    label: "주의해서 드세요",
+    label: "조금 주의가 필요해요",
     color: "#F59E0B",
     bg: "#FFF9EF",
     chip: "#FEF3C7",
   },
   avoid: {
-    label: "피하는 게 좋아요",
+    label: "지금은 피하는 게 좋아요",
     color: "#DC2626",
     bg: "#FEF8F8",
     chip: "#FEE2E2",
   },
 } as const;
-
-const matchedTypeConfig: Record<
-  CheckResponse["matchedType"],
-  { label: string; description: string }
-> = {
-  exact_food: {
-    label: "직접 매칭",
-    description: "대표 음식이 직접 등록되어 있어 가장 정확한 편입니다.",
-  },
-  alias: {
-    label: "별칭 매칭",
-    description: "입력한 표현을 기존 대표 음식으로 인식해 판단했습니다.",
-  },
-  food_group: {
-    label: "음식군 매칭",
-    description: "정확한 음식 대신 같은 카테고리 기준으로 판단했습니다.",
-  },
-  fallback: {
-    label: "보수적 추정",
-    description: "직접 등록된 음식이 없어 안전한 방향으로 보수적으로 안내합니다.",
-  },
-  none: {
-    label: "미확인",
-    description: "검색어가 비어 있거나 판단할 수 없는 상태입니다.",
-  },
-};
-
-const confidenceCopy: Record<CheckResponse["confidenceGrade"], string> = {
-  A: "직접 확인된 음식",
-  B: "비슷한 음식 기준",
-  C: "보수적 추정",
-};
 
 const mealTypeLabel: Record<string, string> = {
   breakfast: "아침",
@@ -150,23 +136,127 @@ function getMatchedSummary(result: CheckResponse) {
   return "직접 등록된 대표 음식 기준으로 판단했습니다.";
 }
 
-function getStatusDescription(result: CheckResponse) {
-  if (result.status === "allowed") {
-    return `대장내시경 ${result.dayStage.name} 기준`;
-  }
-
-  if (result.status === "caution") {
-    return `${result.dayStage.name}엔 조심하는 편이 좋아요`;
-  }
-
-  return `${result.dayStage.name}엔 피하는 게 안전해요`;
-}
-
 function getFallbackCopy() {
   return {
-    title: "등록되지 않은 음식이에요",
-    body: "정확한 기준이 없어 조심해서 안내하고 있어요.",
+    title: "등록된 기준이 없어 보수적으로 안내하고 있어요",
+    body: "비슷한 음식도 함께 확인해보세요",
   };
+}
+
+function getStageLabel(dayStageSlug: string) {
+  return stageOptions.find((option) => option.value === dayStageSlug)?.resultLabel ?? dayStageSlug;
+}
+
+function normalizeMenuDescription(description: string | null) {
+  if (!description) {
+    return "부담 적은 식단";
+  }
+
+  return description
+    .replaceAll("저잔사 중심 식단", "부담 적은 식단")
+    .replaceAll("저잔사 식단", "부담 적은 식단")
+    .replaceAll("저잔사", "부담 적은");
+}
+
+function getFoodTraits(result: CheckResponse) {
+  const tagSet = new Set(result.appliedTagSlugs);
+  const traits: string[] = [];
+
+  if (result.matchedType === "fallback") {
+    return ["등록된 음식 기준이 아직 없어요"];
+  }
+
+  if (tagSet.has("high-fiber") || tagSet.has("vegetables-heavy") || tagSet.has("namul")) {
+    traits.push("채소와 섬유질이 많아요");
+  }
+
+  if (tagSet.has("chunky")) {
+    traits.push("건더기가 많이 남을 수 있어요");
+  }
+
+  if (tagSet.has("seeded") || tagSet.has("with-peel")) {
+    traits.push("씨나 껍질이 남을 수 있어요");
+  }
+
+  if (tagSet.has("spicy-seasoning") || tagSet.has("fried")) {
+    traits.push("매운 양념이나 기름이 부담이 될 수 있어요");
+  }
+
+  if (tagSet.has("low-fiber") || tagSet.has("soft-food")) {
+    traits.push("부드럽고 부담이 적은 편이에요");
+  }
+
+  if (tagSet.has("clear-broth")) {
+    traits.push("맑고 가벼운 음식에 가까워요");
+  }
+
+  if (tagSet.has("dairy")) {
+    traits.push("유제품이라 속이 불편할 수 있어요");
+  }
+
+  if (traits.length === 0) {
+    traits.push(result.primaryReason);
+  }
+
+  return traits.slice(0, 2);
+}
+
+function getStageImportantPoint(dayStageSlug: string) {
+  if (dayStageSlug === "d5") {
+    return "대장내시경 4–5일 전에는 섬유질 많은 음식부터 줄이는 편이 좋아요";
+  }
+
+  if (dayStageSlug === "d1") {
+    return "대장내시경 1일 전에는 가장 가볍고 부드러운 음식이 좋아요";
+  }
+
+  return "대장내시경 2–3일 전에는 장에 남는 음식이 부담이 될 수 있어요";
+}
+
+function getReferenceBadges(result: CheckResponse) {
+  const badges: string[] = [];
+
+  if (result.matchedType === "exact_food") {
+    badges.push("직접 확인된 음식");
+  } else if (result.matchedType === "alias") {
+    badges.push("같은 음식 이름으로 확인");
+  } else if (result.matchedType === "food_group") {
+    badges.push("비슷한 음식 기준 참고");
+  } else if (result.matchedType === "fallback") {
+    badges.push("등록 전 음식");
+  }
+
+  if (result.confidenceGrade === "A") {
+    badges.push("직접 기준 확인");
+  } else if (result.confidenceGrade === "B") {
+    badges.push("비슷한 기준 참고");
+  } else {
+    badges.push("보수적 안내");
+  }
+
+  return badges.slice(0, 2);
+}
+
+function getReferencePoints(result: CheckResponse) {
+  if (result.matchedType === "fallback") {
+    return ["등록된 기준이 없어 안전한 쪽으로 먼저 안내했어요"];
+  }
+
+  const points: string[] = [];
+
+  if (result.topAppliedRules.some((rule) => rule.source === "food")) {
+    points.push("직접 확인된 음식 기준을 봤어요");
+  }
+
+  if (result.topAppliedRules.some((rule) => rule.source === "food_group")) {
+    points.push("비슷한 음식 기준도 함께 참고했어요");
+  }
+
+  if (points.length === 0) {
+    points.push(getMatchedSummary(result));
+  }
+
+  return points.slice(0, 2);
 }
 
 function getShortReasons(result: CheckResponse) {
@@ -183,20 +273,20 @@ function getShortReasons(result: CheckResponse) {
     if (tagSet.has("clear-broth")) {
       return {
         primary: "맑고 부담이 적어서 괜찮아요",
-        secondary: "지금 단계 식단에 비교적 잘 맞아요",
+        secondary: "지금 단계에 비교적 잘 맞아요",
       };
     }
 
     if (tagSet.has("low-fiber") || tagSet.has("soft-food")) {
       return {
         primary: "부담이 적어서 지금은 괜찮아요",
-        secondary: "지금 단계에서 비교적 안전한 편이에요",
+        secondary: "지금 단계에 비교적 안전한 편이에요",
       };
     }
 
     return {
       primary: "지금은 비교적 괜찮은 편이에요",
-      secondary: "양만 많지 않게 드시면 더 좋아요",
+      secondary: "양이 많지 않으면 더 좋아요",
     };
   }
 
@@ -204,14 +294,14 @@ function getShortReasons(result: CheckResponse) {
     if (tagSet.has("processed")) {
       return {
         primary: "가공이 많아 조심하는 편이 좋아요",
-        secondary: "양을 줄이거나 더 순한 음식이 나아요",
+        secondary: "양을 줄이거나 순한 음식이 나아요",
       };
     }
 
     if (tagSet.has("dairy")) {
       return {
         primary: "유제품이라 속이 불편할 수 있어요",
-        secondary: "적게 먹거나 다른 음식이 더 나아요",
+        secondary: "적게 먹거나 다른 음식이 나아요",
       };
     }
 
@@ -222,36 +312,36 @@ function getShortReasons(result: CheckResponse) {
   }
 
   if (tagSet.has("high-fiber") || tagSet.has("vegetables-heavy") || tagSet.has("namul")) {
-    return {
-      primary: "섬유질이 많아서 지금은 피하세요",
-      secondary: "더 부드러운 음식으로 바꾸는 게 좋아요",
-    };
-  }
+      return {
+        primary: "섬유질이 많아서 지금은 피하세요",
+        secondary: "대신 더 부드러운 음식이 좋아요",
+      };
+    }
 
   if (tagSet.has("seeded") || tagSet.has("with-peel")) {
-    return {
-      primary: "씨나 껍질이 있어 지금은 피하세요",
-      secondary: "잔사가 적은 음식이 더 잘 맞아요",
-    };
-  }
+      return {
+        primary: "씨나 껍질이 있어 지금은 피하세요",
+        secondary: "잔사가 적은 음식이 더 잘 맞아요",
+      };
+    }
 
   if (tagSet.has("spicy-seasoning") || tagSet.has("fried")) {
-    return {
-      primary: "매운 양념이나 기름이 부담이 돼요",
-      secondary: "맑고 순한 음식으로 바꾸는 게 좋아요",
-    };
-  }
+      return {
+        primary: "매운 양념이나 기름이 부담이 돼요",
+        secondary: "대신 맑고 순한 음식이 좋아요",
+      };
+    }
 
   if (tagSet.has("chunky")) {
     return {
       primary: "건더기가 많아서 장에 남을 수 있어요",
-      secondary: "맑고 부드러운 음식이 더 안전해요",
+      secondary: "대신 맑고 부드러운 음식이 좋아요",
     };
   }
 
   return {
     primary: "검사 준비에는 지금 맞지 않는 편이에요",
-    secondary: "대신 먹을 수 있는 음식으로 바꾸세요",
+    secondary: "대신 더 부드러운 음식이 좋아요",
   };
 }
 
@@ -364,10 +454,23 @@ export default function HomePage() {
     await runSearch(query, dayStage);
   }
 
+  async function handleStageChange(nextDayStage: string) {
+    if (nextDayStage === dayStage) {
+      return;
+    }
+
+    setDayStage(nextDayStage);
+
+    if (result?.query) {
+      await runSearch(result.query, nextDayStage);
+    }
+  }
+
   const status = result ? statusConfig[result.status] : null;
-  const matchMeta = result ? matchedTypeConfig[result.matchedType] : null;
   const shortReasons = result ? getShortReasons(result) : null;
-  const activeStage = stageOptions.find((option) => option.value === dayStage);
+  const detailTraits = result ? getFoodTraits(result) : [];
+  const detailBadges = result ? getReferenceBadges(result) : [];
+  const detailReferencePoints = result ? getReferencePoints(result) : [];
 
   return (
     <main className="page">
@@ -375,8 +478,8 @@ export default function HomePage() {
         <section className="hero-card">
           <div className="eyebrow">대장내시경 음식체크 by 건강신호등</div>
           <div className="hero-copy-block">
-            <h1 className="hero-title">먹어도 될까?</h1>
-            <p className="hero-copy">지금 단계에 맞는지 바로 확인하고, 대신 먹을 음식까지 바로 보세요.</p>
+            <h1 className="hero-title">대장내시경 전 음식 확인</h1>
+            <p className="hero-copy">지금 먹어도 되는지 확인해보세요</p>
           </div>
 
           <form onSubmit={handleSubmit} className="search-panel">
@@ -385,18 +488,20 @@ export default function HomePage() {
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setDayStage(option.value)}
+                  onClick={() => {
+                    void handleStageChange(option.value);
+                  }}
                   className={`stage-button${dayStage === option.value ? " is-active" : ""}`}
                 >
-                  <span>{option.label}</span>
+                  <span className="stage-button-label stage-button-label-desktop">{option.label}</span>
+                  <span className="stage-button-label stage-button-label-mobile">{option.shortLabel}</span>
+                  <span className="stage-button-days">{option.daysLabel}</span>
                 </button>
               ))}
             </div>
-            <p className="stage-hint">{activeStage?.hint}</p>
 
             <div className="search-row">
               <label className="search-input-wrap">
-                <span className="search-label">음식 검색</span>
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -405,22 +510,18 @@ export default function HomePage() {
                 />
               </label>
               <button type="submit" disabled={loading} className="search-button">
-                {loading ? "확인 중..." : "먹어도 되는지 확인"}
+                {loading ? (
+                  <>
+                    <span className="button-spinner" aria-hidden="true" />
+                    확인 중...
+                  </>
+                ) : (
+                  "확인하기"
+                )}
               </button>
             </div>
 
-            {loading ? (
-              <div className="loading-card" aria-live="polite">
-                <div className="loading-bar" />
-                <p>음식 정보를 찾고 있어요.</p>
-              </div>
-            ) : null}
-
             <div className="quick-row">
-              <p className="micro-copy">
-                헷갈리는 음식도 먼저 안전한 쪽으로 안내해드려요.
-              </p>
-              <span className="quick-label">빠른 예시</span>
               <div className="quick-chips">
                 {quickExamples.map((example) => (
                   <button
@@ -439,29 +540,31 @@ export default function HomePage() {
           {error ? <p className="error-text">{error}</p> : null}
         </section>
 
-        {result && status && matchMeta ? (
+        {result && status ? (
           <section className="result-stack">
             <article className="result-hero" style={{ background: status.bg, color: status.color }}>
-              <p className="result-query-label">{result.query}</p>
               <div className="result-main is-single">
                 <div className="decision-block">
                   <strong className="decision-status">{status.label}</strong>
-                  <p className="decision-stage">{result.dayStage.name} 기준</p>
+                  <p className="decision-context">
+                    {result.query} · 대장내시경 {getStageLabel(result.dayStage.slug)}
+                  </p>
                   <p className="primary-reason">{shortReasons?.primary}</p>
-                  <p className="secondary-reason">{shortReasons?.secondary}</p>
+                  {shortReasons?.secondary ? (
+                    <p className="secondary-reason">{shortReasons.secondary}</p>
+                  ) : null}
                 </div>
               </div>
             </article>
 
             <section className="action-grid">
-              <article className="panel-card">
-                <div className="panel-header">
-                  <h3>대신 먹을 수 있는 음식</h3>
-                  <span>바로 눌러서 다시 보기</span>
-                </div>
-                {result.similarFoods.length > 0 ? (
+              {result.similarFoods.length >= 2 ? (
+                <article className="panel-card">
+                  <div className="panel-header">
+                    <h3>대신 먹을 수 있어요</h3>
+                  </div>
                   <div className="action-chip-list">
-                    {result.similarFoods.map((food) => (
+                    {result.similarFoods.slice(0, 3).map((food) => (
                       <button
                         key={food.id}
                         type="button"
@@ -472,47 +575,27 @@ export default function HomePage() {
                       </button>
                     ))}
                   </div>
-                ) : (
-                  <p className="empty-copy">바로 제안할 유사 음식은 아직 없어요.</p>
-                )}
-              </article>
+                </article>
+              ) : null}
 
               <article className="panel-card">
                 <div className="panel-header">
                   <h3>추천 메뉴</h3>
-                  <span>지금 기준으로 더 무난한 선택</span>
                 </div>
                 {result.recommendedMenus.length > 0 ? (
                   <div className="menu-list">
                     {result.recommendedMenus.map((menu) => (
-                      <button
-                        key={menu.id}
-                        type="button"
-                        className="menu-card is-strong"
-                        onClick={() => {
-                          const firstFood = menu.foods[0]?.name;
-                          if (firstFood) {
-                            void runSearch(firstFood, result.dayStage.slug);
-                          }
-                        }}
-                      >
-                        <div className="menu-topline">
-                          <strong>{menu.name}</strong>
-                          {menu.mealType ? (
-                            <span>{mealTypeLabel[menu.mealType] ?? menu.mealType}</span>
-                          ) : null}
-                        </div>
-                        {menu.description ? <p>{menu.description}</p> : null}
-                        <div className="menu-foods">
-                          {menu.foods
-                            .map((food) =>
-                              [food.name, food.roleLabel, food.quantityNote]
-                                .filter(Boolean)
-                                .join(" · "),
-                            )
-                            .join(" / ")}
-                        </div>
-                      </button>
+                      <div key={menu.id} className="menu-card">
+                        {menu.mealType ? (
+                          <span className="menu-badge">{mealTypeLabel[menu.mealType] ?? menu.mealType}</span>
+                        ) : null}
+                        <strong className="menu-title">
+                          {menu.mealType
+                            ? `${getStageLabel(result.dayStage.slug)} ${mealTypeLabel[menu.mealType] ?? menu.mealType} 추천`
+                            : menu.name}
+                        </strong>
+                        <p>{normalizeMenuDescription(menu.description)}</p>
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -523,37 +606,46 @@ export default function HomePage() {
               <article className="panel-card">
                 {result.matchedType === "fallback" ? (
                   <div className="fallback-callout">
-                    <strong>{getFallbackCopy().title}</strong>
+                    <p className="fallback-text is-primary">{getFallbackCopy().title}</p>
                     <p>{getFallbackCopy().body}</p>
                   </div>
                 ) : null}
 
-                {(result.topAppliedRules.length > 0 || result.appliedTagSlugs.length > 0) ? (
+                {(detailTraits.length > 0 || result.appliedTagSlugs.length > 0) ? (
                   <details className="details-box">
-                    <summary>상세 정보 보기</summary>
+                    <summary>왜 이렇게 안내하나요?</summary>
                     <div className="support-row">
-                      <span className="support-pill">{matchMeta.label}</span>
-                      <span className="support-pill">
-                        신뢰도 {result.confidenceGrade} · {confidenceCopy[result.confidenceGrade]}
-                      </span>
+                      {detailBadges.map((badge) => (
+                        <span key={badge} className="support-pill">
+                          {badge}
+                        </span>
+                      ))}
                     </div>
-                    <p className="details-copy">{getMatchedSummary(result)}</p>
-                    {result.topAppliedRules.length > 0 ? (
-                      <div className="rule-list">
-                        {result.topAppliedRules.map((rule) => (
-                          <div key={`${rule.tagSlug}-${rule.source}`} className="rule-item">
-                            <div className="rule-topline">
-                              <strong>{tagLabel[rule.tagSlug] ?? rule.tagSlug}</strong>
-                              <span>{rule.source === "food" ? "개별 음식 보정" : "음식군 기본 규칙"}</span>
-                            </div>
-                            <p>{rule.rationale}</p>
-                          </div>
+                    <div className="detail-group">
+                      <strong>1. 이 음식의 특징</strong>
+                      <ul className="detail-list">
+                        {detailTraits.map((trait) => (
+                          <li key={trait}>{trait}</li>
                         ))}
-                      </div>
-                    ) : null}
+                      </ul>
+                    </div>
+                    <div className="detail-group">
+                      <strong>2. 지금 단계에서 중요한 점</strong>
+                      <ul className="detail-list">
+                        <li>{getStageImportantPoint(result.dayStage.slug)}</li>
+                      </ul>
+                    </div>
+                    <div className="detail-group">
+                      <strong>3. 참고 기준</strong>
+                      <ul className="detail-list">
+                        {detailReferencePoints.map((point) => (
+                          <li key={point}>{point}</li>
+                        ))}
+                      </ul>
+                    </div>
                     {result.appliedTagSlugs.length > 0 ? (
                       <div className="tag-row">
-                        {result.appliedTagSlugs.map((tag) => (
+                        {result.appliedTagSlugs.slice(0, 4).map((tag) => (
                           <span key={tag} className="tag-pill" style={{ background: status.chip }}>
                             {tagLabel[tag] ?? tag}
                           </span>
@@ -569,6 +661,11 @@ export default function HomePage() {
       </div>
 
       <style jsx>{`
+        :global(body) {
+          margin: 0;
+          background: #f7f8fa;
+        }
+
         .page {
           --primary: #2f6fed;
           --bg: #f7f8fa;
@@ -583,26 +680,28 @@ export default function HomePage() {
           background: var(--bg);
           color: var(--text);
           font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif;
+          word-break: keep-all;
         }
 
         .page-shell {
-          max-width: 960px;
+          max-width: 640px;
           margin: 0 auto;
           display: grid;
-          gap: 20px;
+          gap: 0;
+          width: 100%;
         }
 
         .hero-card,
         .panel-card,
         .result-hero {
-          border-radius: 16px;
-          border: 1px solid var(--line);
+          border-radius: 0;
+          border: none;
           box-shadow: none;
         }
 
         .hero-card {
-          background: var(--surface);
-          padding: 16px;
+          background: transparent;
+          padding: 8px 0 20px;
         }
 
         .eyebrow {
@@ -621,22 +720,24 @@ export default function HomePage() {
 
         .hero-copy-block {
           margin-top: 10px;
-          max-width: 620px;
+          max-width: 480px;
         }
 
         .hero-title {
           margin: 0;
-          font-size: clamp(34px, 5vw, 48px);
+          font-size: clamp(30px, 4.4vw, 38px);
           line-height: 1.08;
           letter-spacing: -0.04em;
           font-weight: 800;
+          max-width: 480px;
         }
 
         .hero-copy {
           margin: 10px 0 0;
           color: var(--muted);
-          font-size: 15px;
-          line-height: 1.75;
+          font-size: 14px;
+          line-height: 1.6;
+          max-width: 480px;
         }
 
         .search-panel {
@@ -648,37 +749,43 @@ export default function HomePage() {
         }
 
         .stage-row {
-          display: inline-grid;
-          grid-template-columns: repeat(3, auto);
-          gap: 4px;
-          align-self: start;
-          padding: 4px;
-          border-radius: 999px;
-          background: var(--surface-soft);
-          border: 1px solid var(--line);
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0;
+          border-bottom: 1px solid var(--line);
         }
 
         .stage-button {
-          border: 1px solid transparent;
+          border: none;
+          border-bottom: 2px solid transparent;
           background: transparent;
-          border-radius: 999px;
-          padding: 11px 16px;
+          border-radius: 0;
+          padding: 0 0 10px;
           text-align: center;
           cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          transition: border-color 0.15s ease, background-color 0.15s ease;
+          display: grid;
+          gap: 1px;
+          justify-items: center;
+          transition: border-color 0.15s ease, color 0.15s ease;
         }
 
-        .stage-button span {
+        .stage-button-label {
           font-size: 14px;
           font-weight: 700;
           color: var(--muted);
         }
 
+        .stage-button-label-mobile {
+          display: none;
+        }
+
+        .stage-button-days {
+          font-size: 11px;
+          color: var(--muted);
+          font-weight: 600;
+        }
+
         .stage-button.is-active {
-          background: var(--surface);
           border-color: var(--primary);
         }
 
@@ -686,30 +793,19 @@ export default function HomePage() {
           color: var(--primary);
         }
 
-        .stage-hint {
-          margin: 0;
-          color: var(--muted);
-          font-size: 13px;
-          line-height: 1.5;
+        .stage-button.is-active .stage-button-days {
+          color: var(--primary);
         }
 
         .search-row {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 132px;
+          display: flex;
+          flex-direction: column;
           gap: 10px;
-          align-items: end;
         }
 
         .search-input-wrap {
           display: grid;
           gap: 8px;
-        }
-
-        .search-label,
-        .quick-label {
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--muted);
         }
 
         .search-input {
@@ -722,6 +818,7 @@ export default function HomePage() {
           outline: none;
           background: var(--surface);
           color: var(--text);
+          line-height: 1.6;
         }
 
         .search-input:focus {
@@ -734,9 +831,15 @@ export default function HomePage() {
           border-radius: 12px;
           background: var(--primary);
           color: #ffffff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
           font-weight: 700;
           font-size: 15px;
           cursor: pointer;
+          width: 100%;
+          min-height: 52px;
         }
 
         .search-button:disabled {
@@ -744,51 +847,19 @@ export default function HomePage() {
           opacity: 0.75;
         }
 
-        .loading-card {
-          display: grid;
-          gap: 8px;
-          padding: 14px 16px;
-          border-radius: 16px;
-          background: var(--surface-soft);
-          border: 1px solid var(--line);
-        }
-
-        .loading-card p {
-          margin: 0;
-          color: var(--muted);
-          font-size: 14px;
-          line-height: 1.5;
-        }
-
-        .loading-bar {
-          position: relative;
-          overflow: hidden;
-          height: 5px;
+        .button-spinner {
+          width: 16px;
+          height: 16px;
           border-radius: 999px;
-          background: #e5e7eb;
-        }
-
-        .loading-bar::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          width: 36%;
-          border-radius: 999px;
-          background: var(--primary);
-          animation: loading-slide 1.2s ease-in-out infinite;
+          border: 2px solid #dbe3f5;
+          border-top-color: var(--primary);
+          animation: spin 0.8s linear infinite;
         }
 
         .quick-row {
           display: grid;
-          gap: 10px;
+          gap: 8px;
           padding-top: 8px;
-        }
-
-        .micro-copy {
-          margin: 0;
-          color: var(--muted);
-          line-height: 1.6;
-          font-size: 14px;
         }
 
         .quick-chips {
@@ -815,30 +886,25 @@ export default function HomePage() {
 
         .result-stack {
           display: grid;
-          gap: 14px;
+          gap: 0;
+          border-top: 1px solid var(--line);
         }
 
         .result-hero {
-          padding: 16px;
-          background: var(--surface) !important;
+          padding: 20px 0;
+          background: transparent !important;
           border-left: 4px solid currentColor;
+          padding-left: 14px;
         }
 
         .result-main {
           display: grid;
-          gap: 14px;
-          margin-top: 8px;
+          gap: 0;
+          margin-top: 0;
         }
 
         .result-main.is-single {
           grid-template-columns: 1fr;
-        }
-
-        .result-query-label {
-          margin: 0;
-          color: var(--muted);
-          font-size: 13px;
-          font-weight: 700;
         }
 
         .decision-block {
@@ -848,48 +914,53 @@ export default function HomePage() {
 
         .decision-status {
           margin: 0;
-          font-size: clamp(32px, 5vw, 44px);
-          line-height: 1.1;
+          font-size: 36px;
+          line-height: 1.12;
           letter-spacing: -0.04em;
           color: var(--text);
+          max-width: 480px;
+          font-weight: 800;
         }
 
+        .decision-context,
         .primary-reason,
         .secondary-reason,
         .fallback-callout p,
-        .rule-item p,
         .menu-card p,
-        .empty-copy {
+        .empty-copy,
+        .detail-list li {
           color: var(--muted);
-          line-height: 1.7;
+          line-height: 1.6;
         }
 
-        .decision-stage {
+        .decision-context {
           margin: 0;
           color: var(--muted);
           font-size: 14px;
-          font-weight: 700;
+          font-weight: 500;
+          max-width: 480px;
+          line-height: 1.6;
         }
 
         .primary-reason {
-          margin: 6px 0 0;
-          font-size: 18px;
+          margin: 4px 0 0;
+          font-size: 20px;
           color: var(--text);
-          font-weight: 700;
-          line-height: 1.65;
-          max-width: 24ch;
+          font-weight: 600;
+          line-height: 1.6;
+          max-width: 480px;
         }
 
         .secondary-reason {
-          margin: 0;
-          font-size: 14px;
-          line-height: 1.7;
-          max-width: 28ch;
+          margin: -1px 0 0;
+          font-size: 16px;
+          line-height: 1.6;
+          max-width: 480px;
         }
 
         .action-grid {
           display: grid;
-          gap: 12px;
+          gap: 0;
         }
 
         .fallback-callout {
@@ -899,18 +970,23 @@ export default function HomePage() {
           border-top: 1px solid var(--line);
         }
 
-        .fallback-callout strong {
-          display: block;
+        .fallback-text {
+          margin: 0;
+          line-height: 1.6;
+          max-width: 480px;
+        }
+
+        .fallback-text.is-primary {
           color: var(--text);
-          margin-bottom: 8px;
-          font-size: 13px;
-          letter-spacing: 0.02em;
+          font-weight: 700;
+          margin-bottom: 2px;
         }
 
         .support-row {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
+          margin-top: 10px;
         }
 
         .support-pill {
@@ -926,10 +1002,9 @@ export default function HomePage() {
         }
 
         .details-box {
-          border-radius: 12px;
-          border: 1px solid var(--line);
-          background: var(--surface);
-          padding: 12px;
+          border: none;
+          background: transparent;
+          padding: 0;
         }
 
         .details-box summary {
@@ -937,23 +1012,39 @@ export default function HomePage() {
           font-weight: 700;
           color: var(--text);
           list-style: none;
-        }
-
-        .details-copy {
-          margin: 12px 0 0;
-          color: var(--muted);
-          line-height: 1.7;
+          font-size: 14px;
+          line-height: 1.6;
         }
 
         .details-box summary::-webkit-details-marker {
           display: none;
         }
 
+        .detail-group {
+          display: grid;
+          gap: 6px;
+          margin-top: 16px;
+          max-width: 480px;
+        }
+
+        .detail-group strong {
+          font-size: 14px;
+          line-height: 1.6;
+          color: var(--text);
+        }
+
+        .detail-list {
+          margin: 0;
+          padding-left: 18px;
+          display: grid;
+          gap: 4px;
+        }
+
         .tag-row {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
-          margin-top: 14px;
+          margin-top: 12px;
         }
 
         .tag-pill {
@@ -965,8 +1056,9 @@ export default function HomePage() {
         }
 
         .panel-card {
-          background: var(--surface);
-          padding: 16px;
+          background: transparent;
+          padding: 20px 0;
+          border-top: 1px solid var(--line);
         }
 
         .panel-header {
@@ -974,7 +1066,7 @@ export default function HomePage() {
           justify-content: space-between;
           align-items: center;
           gap: 12px;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
 
         .panel-header h3 {
@@ -984,13 +1076,6 @@ export default function HomePage() {
           letter-spacing: -0.02em;
         }
 
-        .panel-header span {
-          color: var(--muted);
-          font-size: 12px;
-          font-weight: 700;
-        }
-
-        .rule-list,
         .menu-list,
         .action-chip-list {
           display: grid;
@@ -998,44 +1083,24 @@ export default function HomePage() {
         }
 
         .action-chip-list {
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(120px, max-content));
+          gap: 8px;
         }
 
-        .rule-item {
-          padding: 12px;
-          border-radius: 12px;
-          background: #f9fafb;
-          border: 1px solid var(--line);
-        }
-
-        .rule-topline,
-        .menu-topline {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: baseline;
-        }
-
-        .rule-topline span,
-        .menu-topline span {
-          color: var(--muted);
-          font-size: 12px;
-          font-weight: 700;
-        }
-
-        .rule-item p,
         .menu-card p {
-          margin: 8px 0 0;
+          margin: 6px 0 0;
+          max-width: 480px;
+          line-height: 1.6;
         }
 
         .choice-button,
         .menu-card {
           width: 100%;
           text-align: left;
-          padding: 14px 16px;
+          padding: 12px 14px;
           border-radius: 12px;
           border: 1px solid var(--line);
-          background: var(--surface);
+          background: #ffffff;
         }
 
         .choice-button {
@@ -1046,14 +1111,7 @@ export default function HomePage() {
           color: var(--primary);
         }
 
-        .menu-card.is-strong {
-          cursor: pointer;
-          box-shadow: none;
-          transition: border-color 0.15s ease, background-color 0.15s ease;
-        }
-
-        .choice-button:hover,
-        .menu-card.is-strong:hover {
+        .choice-button:hover {
           transform: none;
           border-color: #c7d2fe;
           background: #f8fbff;
@@ -1062,15 +1120,30 @@ export default function HomePage() {
         .menu-card strong {
           color: var(--text);
           font-size: 16px;
+          line-height: 1.5;
         }
 
-        .menu-foods {
-          color: var(--muted);
-          line-height: 1.6;
+        .menu-title {
+          display: block;
+          max-width: 480px;
+        }
+
+        .menu-badge {
+          display: inline-flex;
+          align-items: center;
+          margin-bottom: 8px;
+          padding: 4px 8px;
+          border-radius: 999px;
+          background: #eef4ff;
+          color: var(--primary);
+          font-size: 12px;
+          font-weight: 700;
         }
 
         .empty-copy {
           margin: 0;
+          max-width: 32ch;
+          line-height: 1.6;
         }
 
         @media (max-width: 920px) {
@@ -1088,29 +1161,22 @@ export default function HomePage() {
           .hero-card,
           .result-hero,
           .panel-card {
-            border-radius: 16px;
-            padding: 16px;
-          }
-
-          .search-row {
-            grid-template-columns: 1fr;
-            gap: 12px;
+            border-radius: 0;
+            padding-left: 0;
+            padding-right: 0;
           }
 
           .hero-title {
-            font-size: 34px;
+            font-size: 30px;
           }
 
-          .hero-copy {
-            font-size: 15px;
+          .hero-copy,
+          .primary-reason {
+            font-size: 16px;
           }
 
-          .page-shell {
-            gap: 16px;
-          }
-
-          .result-stack {
-            gap: 12px;
+          .decision-status {
+            font-size: 36px;
           }
 
           .stage-row {
@@ -1124,6 +1190,19 @@ export default function HomePage() {
 
           .stage-button span {
             font-size: 13px;
+          }
+
+          .stage-button-label-desktop {
+            display: none;
+          }
+
+          .stage-button-label-mobile {
+            display: inline;
+          }
+
+          .stage-button-days {
+            display: inline;
+            font-size: 11px;
           }
 
           .primary-reason,
@@ -1145,12 +1224,9 @@ export default function HomePage() {
           }
         }
 
-        @keyframes loading-slide {
-          0% {
-            transform: translateX(-120%);
-          }
-          100% {
-            transform: translateX(300%);
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
           }
         }
       `}</style>
