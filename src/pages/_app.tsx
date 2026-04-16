@@ -3,9 +3,11 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { getSiteUrl } from "../lib/site-url";
 
-const defaultTitle = "대장내시경 전에 먹어도 될까? | 음식 바로 확인";
-const defaultDescription =
-  "대장내시경 전 음식, 먹어도 되는지 바로 확인하세요. 김치찌개, 라면, 샐러드 등 음식별 섭취 가능 여부와 이유를 한눈에 확인할 수 있습니다.";
+const defaultTitle = "대장내시경 전에 먹어도 될까? | 건강신호등";
+const defaultDescription = "대장내시경 전 먹어도 되는 음식인지 바로 확인할 수 있어요.";
+const ogTitle = "대장내시경 전에 먹어도 될까? | 음식 바로 확인";
+const ogDescription =
+  "대장내시경 전 음식, 먹어도 되는지 바로 확인하세요. 음식별 섭취 가능 여부와 이유를 한눈에 확인할 수 있습니다.";
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -33,14 +35,14 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta property="og:type" content="website" />
         <meta property="og:locale" content="ko_KR" />
         <meta property="og:site_name" content="건강신호등" />
-        <meta property="og:title" content={defaultTitle} />
-        <meta property="og:description" content={defaultDescription} />
+        <meta property="og:title" content={ogTitle} />
+        <meta property="og:description" content={ogDescription} />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={ogImageUrl} />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={defaultTitle} />
-        <meta name="twitter:description" content={defaultDescription} />
+        <meta name="twitter:title" content={ogTitle} />
+        <meta name="twitter:description" content={ogDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
       <Component {...pageProps} />

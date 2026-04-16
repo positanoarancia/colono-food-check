@@ -29,6 +29,7 @@
 * FAQ를 heading 구조 + JSON-LD(`FAQPage`, `WebApplication`)로 보강하고, 검색 의도를 설명하는 짧은 본문 문장을 추가
 * site URL은 `NEXT_PUBLIC_SITE_URL` 우선, 없으면 Vercel production URL을 쓰도록 정리해 배포 canonical/og:image가 absolute URL로 나오게 준비
 * Google Search Console 등록용 `google-site-verification` 메타 태그를 전역 head에 추가
+* OG 이미지를 화면 축소형에서 전용 프로모션 카드형 SVG로 교체하고, 공유 카드 제목/설명을 메신저 미리보기 기준으로 다시 정리
 * 추천 메뉴는 결과 화면에서 제거하고, 하단 `FAQ / 가이드 보기` 섹션 안으로 옮겨 결과 흐름을 방해하지 않게 정리
 * 상세 이유 제목을 `판단 근거 보기`로 바꾸고, 직접 기준류 badge 대신 음식 특성 badge만 남기도록 조정
 * 결과 카드는 왼쪽 상태 라인만 유지하고, 위아래 구분선 대신 여백 중심으로 읽히도록 정리
