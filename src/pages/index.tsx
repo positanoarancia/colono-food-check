@@ -869,7 +869,7 @@ export default function HomePage() {
           padding: 20px 0;
           background: transparent !important;
           border-left: 4px solid currentColor;
-          padding-left: 16px;
+          padding-left: 20px;
         }
 
         .result-main {
@@ -1167,10 +1167,15 @@ export default function HomePage() {
           }
 
           .hero-card,
-          .result-hero,
           .panel-card {
             border-radius: 0;
             padding-left: 0;
+            padding-right: 0;
+          }
+
+          .result-hero {
+            border-radius: 0;
+            padding-left: 20px;
             padding-right: 0;
           }
 
