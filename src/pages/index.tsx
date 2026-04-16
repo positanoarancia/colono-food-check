@@ -523,13 +523,15 @@ export default function HomePage() {
                 aria-label="현재 페이지 공유하기"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="share-icon">
+                  <circle cx="18" cy="5" r="2.2" fill="currentColor" />
+                  <circle cx="6" cy="12" r="2.2" fill="currentColor" />
+                  <circle cx="18" cy="19" r="2.2" fill="currentColor" />
                   <path
-                    d="M15 5l4 4m0 0l-4 4m4-4H9a4 4 0 00-4 4v5"
+                    d="M8 11l7.4-4.4M8 13l7.4 4.4"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1.8"
                     strokeLinecap="round"
-                    strokeLinejoin="round"
                   />
                 </svg>
               </button>
@@ -761,15 +763,14 @@ export default function HomePage() {
         }
 
         .hero-card {
+          position: relative;
           background: transparent;
           padding: 8px 0 20px;
         }
 
         .hero-top {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 16px;
+          position: relative;
+          min-height: 24px;
         }
 
         .eyebrow {
@@ -783,40 +784,40 @@ export default function HomePage() {
         }
 
         .share-box {
+          position: absolute;
+          top: -4px;
+          right: 0;
           display: grid;
           justify-items: end;
           gap: 6px;
-          min-height: 40px;
         }
 
         .share-button {
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          border: 1px solid #d7deea;
-          background: rgba(255, 255, 255, 0.88);
-          color: #4b5563;
+          width: 28px;
+          height: 28px;
+          border: none;
+          background: transparent;
+          color: #94a3b8;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+          padding: 0;
+          transition: color 0.15s ease, opacity 0.15s ease;
           -webkit-tap-highlight-color: transparent;
         }
 
         .share-button:hover {
-          border-color: #c7d2fe;
-          background: #ffffff;
           color: var(--primary);
         }
 
         .share-button:active {
-          background: #f3f6fb;
+          opacity: 0.65;
         }
 
         .share-icon {
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
         }
 
         .share-feedback {
@@ -826,6 +827,10 @@ export default function HomePage() {
           color: var(--muted);
           text-align: right;
           white-space: nowrap;
+          background: rgba(255, 255, 255, 0.96);
+          padding: 4px 8px;
+          border-radius: 999px;
+          border: 1px solid #e5e7eb;
         }
 
         .hero-grid {
@@ -1332,9 +1337,13 @@ export default function HomePage() {
             font-size: 30px;
           }
 
+          .share-box {
+            top: -2px;
+          }
+
           .share-button {
-            width: 44px;
-            height: 44px;
+            width: 32px;
+            height: 32px;
           }
 
           .hero-copy,
