@@ -307,9 +307,32 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckResponse | null>(null);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const hasAttemptedPrewarmRef = useRef(false);
   const prewarmFinishedRef = useRef(false);
   const firstSearchLoggedRef = useRef(false);
+  const shareFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function setShareFeedbackWithTimeout(message: string) {
+    setShareFeedback(message);
+
+    if (shareFeedbackTimeoutRef.current) {
+      clearTimeout(shareFeedbackTimeoutRef.current);
+    }
+
+    shareFeedbackTimeoutRef.current = setTimeout(() => {
+      setShareFeedback(null);
+      shareFeedbackTimeoutRef.current = null;
+    }, 2200);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (shareFeedbackTimeoutRef.current) {
+        clearTimeout(shareFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (hasAttemptedPrewarmRef.current) {
@@ -344,6 +367,55 @@ export default function HomePage() {
         });
       });
   }, []);
+
+  async function copyCurrentUrl() {
+    const currentUrl = window.location.href;
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(currentUrl);
+      return;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = currentUrl;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+
+  async function handleShare() {
+    const shareData = {
+      title: "건강신호등",
+      text: "대장내시경 전에 먹어도 되는 음식인지 바로 확인할 수 있어요",
+      url: window.location.href,
+    };
+
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share(shareData);
+        setShareFeedbackWithTimeout("링크를 공유할 수 있어요");
+        return;
+      }
+
+      await copyCurrentUrl();
+      setShareFeedbackWithTimeout("링크가 복사됐어요");
+    } catch (caught) {
+      if (caught instanceof Error && caught.name === "AbortError") {
+        return;
+      }
+
+      try {
+        await copyCurrentUrl();
+        setShareFeedbackWithTimeout("링크가 복사됐어요");
+      } catch {
+        setShareFeedbackWithTimeout("공유 링크를 준비하지 못했어요");
+      }
+    }
+  }
 
   async function runSearch(nextQuery: string, nextDayStage = dayStage) {
     const trimmedQuery = nextQuery.trim();
@@ -441,7 +513,29 @@ export default function HomePage() {
     <main className="page">
       <div className="page-shell">
         <section className="hero-card">
-          <div className="eyebrow">건강신호등</div>
+          <div className="hero-top">
+            <div className="eyebrow">건강신호등</div>
+            <div className="share-box">
+              <button
+                type="button"
+                className="share-button"
+                onClick={handleShare}
+                aria-label="현재 페이지 공유하기"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" className="share-icon">
+                  <path
+                    d="M15 5l4 4m0 0l-4 4m4-4H9a4 4 0 00-4 4v5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              {shareFeedback ? <p className="share-feedback">{shareFeedback}</p> : null}
+            </div>
+          </div>
           <div className="hero-copy-block">
             <h1 className="hero-title">대장내시경 전에 먹어도 될까?</h1>
             <p className="hero-copy">음식을 검색하면 바로 확인할 수 있어요</p>
@@ -671,14 +765,67 @@ export default function HomePage() {
           padding: 8px 0 20px;
         }
 
+        .hero-top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
         .eyebrow {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          color: var(--muted);
+          color: #4d7e74;
           font-size: 12px;
           font-weight: 700;
           letter-spacing: 0.02em;
+        }
+
+        .share-box {
+          display: grid;
+          justify-items: end;
+          gap: 6px;
+          min-height: 40px;
+        }
+
+        .share-button {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          border: 1px solid #d7deea;
+          background: rgba(255, 255, 255, 0.88);
+          color: #4b5563;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .share-button:hover {
+          border-color: #c7d2fe;
+          background: #ffffff;
+          color: var(--primary);
+        }
+
+        .share-button:active {
+          background: #f3f6fb;
+        }
+
+        .share-icon {
+          width: 18px;
+          height: 18px;
+        }
+
+        .share-feedback {
+          margin: 0;
+          font-size: 12px;
+          line-height: 1.5;
+          color: var(--muted);
+          text-align: right;
+          white-space: nowrap;
         }
 
         .hero-grid {
@@ -1183,6 +1330,11 @@ export default function HomePage() {
 
           .hero-title {
             font-size: 30px;
+          }
+
+          .share-button {
+            width: 44px;
+            height: 44px;
           }
 
           .hero-copy,
