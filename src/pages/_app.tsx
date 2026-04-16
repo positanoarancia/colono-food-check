@@ -1,18 +1,17 @@
 import type { AppProps } from "next/app";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { getSiteUrl } from "../lib/site-url";
 
-const defaultTitle = "대장내시경 음식체크 | 건강신호등";
+const defaultTitle = "대장내시경 전에 먹어도 될까? | 음식 바로 확인";
 const defaultDescription =
-  "대장내시경 전 먹어도 되는 음식을 날짜 단계별로 바로 확인하는 검색 서비스.";
+  "대장내시경 전 음식, 먹어도 되는지 바로 확인하세요. 김치찌개, 라면, 샐러드 등 음식별 섭취 가능 여부와 이유를 한눈에 확인할 수 있습니다.";
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
-  const canonicalPath = router.asPath === "/" ? "" : router.asPath;
+  const siteUrl = getSiteUrl();
+  const cleanPath = router.asPath.split("#")[0]?.split("?")[0] || "/";
+  const canonicalPath = cleanPath === "/" ? "" : cleanPath;
   const canonicalUrl = `${siteUrl}${canonicalPath}`;
   const ogImageUrl = `${siteUrl}/og-image.svg`;
 
@@ -24,6 +23,10 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#f4f8ef" />
         <meta name="format-detection" content="telephone=no, email=no, address=no" />
+        <meta
+          name="google-site-verification"
+          content="f8VLh3Llc8IXBYWkldrHvplHkYIt17No7Sjnuc9TexI"
+        />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="canonical" href={canonicalUrl} />
 

@@ -25,6 +25,10 @@
 * 헤더 문구를 `건강신호등 / 대장내시경 전에 먹어도 될까? / 음식을 검색하면 바로 확인할 수 있어요`로 교체
 * `건강신호등` 브랜드 라인에 절제된 색 포인트를 적용하고, 헤더 우측 상단에 공유 버튼을 추가
 * 공유 버튼은 Web Share API 우선, 미지원 환경에서는 현재 URL 복사 fallback과 짧은 피드백으로 동작하도록 연결
+* 메인 페이지 title/description/canonical/OG/Twitter 메타를 SEO 기준으로 정리하고, query 없는 canonical URL만 출력되도록 조정
+* FAQ를 heading 구조 + JSON-LD(`FAQPage`, `WebApplication`)로 보강하고, 검색 의도를 설명하는 짧은 본문 문장을 추가
+* site URL은 `NEXT_PUBLIC_SITE_URL` 우선, 없으면 Vercel production URL을 쓰도록 정리해 배포 canonical/og:image가 absolute URL로 나오게 준비
+* Google Search Console 등록용 `google-site-verification` 메타 태그를 전역 head에 추가
 * 추천 메뉴는 결과 화면에서 제거하고, 하단 `FAQ / 가이드 보기` 섹션 안으로 옮겨 결과 흐름을 방해하지 않게 정리
 * 상세 이유 제목을 `판단 근거 보기`로 바꾸고, 직접 기준류 badge 대신 음식 특성 badge만 남기도록 조정
 * 결과 카드는 왼쪽 상태 라인만 유지하고, 위아래 구분선 대신 여백 중심으로 읽히도록 정리

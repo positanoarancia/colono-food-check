@@ -1,4 +1,6 @@
+import Head from "next/head";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { getSiteUrl } from "../lib/site-url";
 
 type CheckResponse = {
   query: string;
@@ -75,6 +77,22 @@ const stageOptions = [
 ] as const;
 
 const quickExamples = ["바나나", "라면", "김치찌개", "흰죽", "샐러드", "카스테라"];
+const siteUrl = getSiteUrl();
+const canonicalUrl = `${siteUrl}/`;
+const faqItems = [
+  {
+    question: "검사 전 어떤 음식 피해야 하나요?",
+    answer:
+      "채소, 잡곡, 견과류, 해조류처럼 장에 남기 쉬운 음식은 먼저 줄이는 편이 좋아요.",
+  },
+  {
+    question: "언제부터 식단 조절하나요?",
+    answer:
+      "보통 4–5일 전부터 섬유질 많은 음식을 줄이고, 2–3일 전부터는 더 가볍게 보는 편이 안전해요.",
+  },
+] as const;
+const pageDescription =
+  "대장내시경 전 음식, 먹어도 되는지 바로 확인하세요. 김치찌개, 라면, 샐러드 등 음식별 섭취 가능 여부와 이유를 한눈에 확인할 수 있습니다.";
 
 const statusConfig = {
   allowed: {
@@ -508,9 +526,40 @@ export default function HomePage() {
         )
         .slice(0, 2)
     : [];
+  const faqStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+  const webApplicationStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "대장내시경 전에 먹어도 될까?",
+    applicationCategory: "HealthApplication",
+    operatingSystem: "Web",
+    description: pageDescription,
+    url: canonicalUrl,
+  };
 
   return (
     <main className="page">
+      <Head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(webApplicationStructuredData) }}
+        />
+      </Head>
       <div className="page-shell">
         <section className="hero-card">
           <div className="hero-top">
@@ -706,21 +755,24 @@ export default function HomePage() {
               ) : null}
             </section>
 
-            <section className="guide-section">
-              <h3 className="guide-heading">FAQ / 가이드</h3>
-              <div className="guide-list">
-                <div className="guide-item">
-                  <strong>검사 전 어떤 음식 피해야 하나요?</strong>
-                  <p>채소, 잡곡, 견과류, 해조류처럼 장에 남기 쉬운 음식은 먼저 줄이는 편이 좋아요.</p>
-                </div>
-                <div className="guide-item">
-                  <strong>언제부터 식단 조절하나요?</strong>
-                  <p>보통 4–5일 전부터 섬유질 많은 음식을 줄이고, 2–3일 전부터는 더 가볍게 보는 편이 안전해요.</p>
-                </div>
-              </div>
-            </section>
           </section>
         ) : null}
+
+        <section className="guide-section">
+          <h2 className="guide-heading">FAQ / 가이드</h2>
+          <div className="guide-copy">
+            <p>대장내시경 전에는 음식에 따라 먹어도 되는 시기가 다를 수 있습니다.</p>
+            <p>김치찌개, 라면, 샐러드 같은 음식도 단계에 따라 섭취 여부가 달라질 수 있습니다.</p>
+          </div>
+          <div className="guide-list">
+            {faqItems.map((item) => (
+              <section key={item.question} className="guide-item">
+                <h3>{item.question}</h3>
+                <p>{item.answer}</p>
+              </section>
+            ))}
+          </div>
+        </section>
       </div>
 
       <style jsx>{`
@@ -1282,6 +1334,20 @@ export default function HomePage() {
           margin-top: 12px;
         }
 
+        .guide-copy {
+          margin-top: 12px;
+          display: grid;
+          gap: 6px;
+          max-width: 560px;
+        }
+
+        .guide-copy p {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.7;
+          font-size: 15px;
+        }
+
         .guide-item {
           border: 1px solid var(--line);
           background: #ffffff;
@@ -1290,10 +1356,11 @@ export default function HomePage() {
           color: var(--text);
         }
 
-        .guide-item strong {
-          display: block;
+        .guide-item h3 {
+          margin: 0;
           font-size: 15px;
           line-height: 1.6;
+          font-weight: 700;
         }
 
         .guide-item p {

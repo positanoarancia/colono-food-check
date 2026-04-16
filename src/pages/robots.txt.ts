@@ -1,7 +1,8 @@
 import type { GetServerSideProps } from "next";
+import { getSiteUrl } from "../lib/site-url";
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  const siteUrl = getSiteUrl();
 
   res.setHeader("Content-Type", "text/plain");
   res.write(`User-agent: *
