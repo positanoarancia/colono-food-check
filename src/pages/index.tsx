@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type CheckResponse = {
   query: string;
@@ -254,6 +254,43 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckResponse | null>(null);
+  const hasAttemptedPrewarmRef = useRef(false);
+  const prewarmFinishedRef = useRef(false);
+  const firstSearchLoggedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasAttemptedPrewarmRef.current) {
+      return;
+    }
+
+    hasAttemptedPrewarmRef.current = true;
+
+    const startedAt = performance.now();
+
+    void fetch("/api/prewarm?condition=colonoscopy")
+      .then(async (response) => {
+        const data = (await response.json()) as
+          | { ok: true; totalDurationMs: number; timings: Record<string, number> }
+          | { error: string };
+
+        if (!response.ok || "error" in data) {
+          throw new Error("error" in data ? data.error : "prewarm failed");
+        }
+
+        prewarmFinishedRef.current = true;
+
+        console.log("[home] prewarm.completed", {
+          clientDurationMs: Math.round(performance.now() - startedAt),
+          serverDurationMs: data.totalDurationMs,
+          timings: data.timings,
+        });
+      })
+      .catch((caught) => {
+        console.warn("[home] prewarm.failed", {
+          message: caught instanceof Error ? caught.message : String(caught),
+        });
+      });
+  }, []);
 
   async function runSearch(nextQuery: string, nextDayStage = dayStage) {
     const trimmedQuery = nextQuery.trim();
@@ -265,6 +302,13 @@ export default function HomePage() {
 
     setLoading(true);
     setError(null);
+
+    const startedAt = performance.now();
+    const timingLabel = !firstSearchLoggedRef.current
+      ? prewarmFinishedRef.current
+        ? "first-search-after-prewarm"
+        : "first-search-before-prewarm"
+      : "warm-search";
 
     try {
       const params = new URLSearchParams({
@@ -283,10 +327,27 @@ export default function HomePage() {
       setQuery(trimmedQuery);
       setDayStage(nextDayStage);
       setResult(data);
+
+      console.log("[home] search.completed", {
+        label: timingLabel,
+        query: trimmedQuery,
+        dayStage: nextDayStage,
+        durationMs: Math.round(performance.now() - startedAt),
+        matchedType: data.matchedType,
+        status: data.status,
+      });
     } catch (caught) {
       setResult(null);
       setError(caught instanceof Error ? caught.message : "검색 중 오류가 발생했습니다.");
+      console.warn("[home] search.failed", {
+        label: timingLabel,
+        query: trimmedQuery,
+        dayStage: nextDayStage,
+        durationMs: Math.round(performance.now() - startedAt),
+        message: caught instanceof Error ? caught.message : String(caught),
+      });
     } finally {
+      firstSearchLoggedRef.current = true;
       setLoading(false);
     }
   }

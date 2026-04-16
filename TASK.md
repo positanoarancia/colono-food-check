@@ -308,6 +308,9 @@
 * [x] food group 전체 조회 비용 축소
 * [x] similar foods 후행 조회로 분리
 * [x] Prisma singleton 확인 및 유지
+* [x] `/api/prewarm` 추가로 첫 검색 전 static 데이터와 DB 연결 prewarm 적용
+* [x] 홈 진입 시 백그라운드 prewarm 1회 호출
+* [x] prewarm 전/후 첫 검색 timing 비교 로그 추가
 
 ---
 

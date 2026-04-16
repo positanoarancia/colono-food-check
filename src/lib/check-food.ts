@@ -612,6 +612,124 @@ export interface CheckFoodResult {
   }>;
 }
 
+export interface PrewarmResult {
+  conditionSlug: string;
+  conditionId: string;
+  dayStages: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    recommendedMenuCount: number;
+    ruleCount: number;
+  }>;
+  timings: Record<string, number>;
+  totalDurationMs: number;
+}
+
+export async function prewarmCheckFood(input: {
+  conditionSlug: string;
+}): Promise<PrewarmResult> {
+  const startedAt = Date.now();
+  const requestContext = {
+    conditionSlug: input.conditionSlug,
+    mode: "prewarm",
+  };
+  const timings: Record<string, number> = {};
+
+  logCheckFood("prewarm.start", requestContext);
+
+  try {
+    await measureStep("db_connect", requestContext, timings, async () => prisma.$connect());
+
+    const condition = await getConditionBySlug(input.conditionSlug, requestContext, timings);
+
+    logCheckFood("prewarm.condition.result", {
+      ...requestContext,
+      conditionFound: Boolean(condition),
+      condition,
+    });
+
+    if (!condition || !condition.isActive) {
+      throw new CheckFoodError("요청한 condition을 찾을 수 없습니다", "NOT_FOUND");
+    }
+
+    const dayStages = await measureStep("prewarm_day_stages_query", requestContext, timings, async () =>
+      prisma.dayStage.findMany({
+        where: { conditionId: condition.id },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+        },
+        orderBy: { sequence: "asc" },
+      }),
+    );
+
+    const warmedDayStages = await Promise.all(
+      dayStages.map(async (dayStage) => {
+        const stageRequestContext = {
+          ...requestContext,
+          dayStageSlug: dayStage.slug,
+        };
+        const stageBundle = await getStageBundle(
+          condition.id,
+          dayStage.slug,
+          stageRequestContext,
+          timings,
+        );
+
+        if (!stageBundle) {
+          throw new CheckFoodError("요청한 dayStage를 찾을 수 없습니다", "NOT_FOUND");
+        }
+
+        const recommendedMenus = await getRecommendedMenus(
+          condition.id,
+          stageBundle.dayStage.id,
+          stageRequestContext,
+          timings,
+        );
+
+        return {
+          id: stageBundle.dayStage.id,
+          slug: stageBundle.dayStage.slug,
+          name: stageBundle.dayStage.name,
+          recommendedMenuCount: recommendedMenus.length,
+          ruleCount: stageBundle.stageRules.length,
+        };
+      }),
+    );
+
+    const totalDurationMs = Date.now() - startedAt;
+    const slowSteps = Object.entries(timings)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([step, durationMs]) => ({ step, durationMs }));
+
+    logCheckFood("prewarm.summary", {
+      ...requestContext,
+      totalDurationMs,
+      timings,
+      slowSteps,
+      dayStages: warmedDayStages,
+    });
+
+    return {
+      conditionSlug: condition.slug,
+      conditionId: condition.id,
+      dayStages: warmedDayStages,
+      timings,
+      totalDurationMs,
+    };
+  } catch (error) {
+    logCheckFood("prewarm.error", {
+      ...requestContext,
+      durationMs: Date.now() - startedAt,
+      error: serializeError(error),
+    });
+    throw error;
+  }
+}
+
 export async function checkFoodByQuery(input: {
   conditionSlug: string;
   dayStageSlug: string;
