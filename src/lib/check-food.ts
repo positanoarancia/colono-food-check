@@ -219,8 +219,74 @@ type FoodGroupRepresentative = Prisma.FoodGetPayload<{
     id: true;
     slug: true;
     name: true;
+    isRepresentative: true;
+    searchPriority: true;
   };
 }>;
+
+const alternativePenaltySuffixes = [
+  "정식",
+  "한상",
+  "샐러드",
+  "주먹밥",
+  "백반",
+  "곱빼기",
+  "특",
+];
+
+export function scoreAlternativeFoodName(name: string) {
+  let score = 0;
+
+  for (const suffix of alternativePenaltySuffixes) {
+    if (name.endsWith(suffix)) {
+      score -= 20;
+    }
+  }
+
+  if (name.includes("세트")) {
+    score -= 20;
+  }
+
+  if (name.length >= 10) {
+    score -= 6;
+  }
+
+  if (name.length >= 14) {
+    score -= 8;
+  }
+
+  return score;
+}
+
+function rankAlternativeFoods<T extends { name: string; isRepresentative?: boolean; searchPriority?: number }>(
+  foods: T[],
+) {
+  return foods
+    .slice()
+    .sort((a, b) => {
+      const representativeDiff = Number(Boolean(b.isRepresentative)) - Number(Boolean(a.isRepresentative));
+      if (representativeDiff !== 0) {
+        return representativeDiff;
+      }
+
+      const priorityDiff = (b.searchPriority ?? 0) - (a.searchPriority ?? 0);
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
+      const scoreDiff = scoreAlternativeFoodName(b.name) - scoreAlternativeFoodName(a.name);
+      if (scoreDiff !== 0) {
+        return scoreDiff;
+      }
+
+      const lengthDiff = a.name.length - b.name.length;
+      if (lengthDiff !== 0) {
+        return lengthDiff;
+      }
+
+      return a.name.localeCompare(b.name, "ko");
+    });
+}
 
 type RecommendedMenuWithFoods = Prisma.RecommendedMenuGetPayload<{
   include: {
@@ -509,20 +575,24 @@ async function findFoodGroupDetail(foodGroupId: string) {
 }
 
 async function findFoodGroupRepresentatives(foodGroupId: string) {
-  return prisma.food.findMany({
+  const foods = await prisma.food.findMany({
     where: { primaryFoodGroupId: foodGroupId },
     select: {
       id: true,
       slug: true,
       name: true,
+      isRepresentative: true,
+      searchPriority: true,
     },
     orderBy: [{ isRepresentative: "desc" }, { searchPriority: "desc" }, { name: "asc" }],
-    take: 3,
+    take: 12,
   });
+
+  return rankAlternativeFoods(foods).slice(0, 3);
 }
 
 async function findAlternativeFoodsFromGroup(foodGroupId: string, excludeFoodId?: string) {
-  return prisma.food.findMany({
+  const foods = await prisma.food.findMany({
     where: {
       primaryFoodGroupId: foodGroupId,
       ...(excludeFoodId ? { id: { not: excludeFoodId } } : {}),
@@ -531,10 +601,14 @@ async function findAlternativeFoodsFromGroup(foodGroupId: string, excludeFoodId?
       id: true,
       slug: true,
       name: true,
+      isRepresentative: true,
+      searchPriority: true,
     },
     orderBy: [{ isRepresentative: "desc" }, { searchPriority: "desc" }, { name: "asc" }],
-    take: 4,
+    take: 12,
   });
+
+  return rankAlternativeFoods(foods).slice(0, 4);
 }
 
 async function findSimilarFoods(foodId: string) {
