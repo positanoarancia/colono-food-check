@@ -91,9 +91,9 @@ const faqItems = [
       "검사 일정과 장정결제 복용 방법은 병원 안내가 가장 우선이에요. 화면 결과와 다르면 병원 안내를 먼저 따라주세요.",
   },
   {
-    question: "검색 결과가 없으면 어떻게 판단하나요?",
+    question: "이 결과는 어디까지 참고하면 되나요?",
     answer:
-      "씨, 껍질, 잡곡, 해조류, 채소처럼 장에 남기 쉬운 재료가 많은지 먼저 보고, 애매하면 더 부드럽고 단순한 음식으로 고르는 편이 안전해요.",
+      "이 결과는 지금 시점에 빠르게 판단할 때 참고하는 용도예요. 검사 일정과 장정결제 복용 방법은 병원 안내를 가장 먼저 따라주세요.",
   },
 ] as const;
 const pageDescription =
@@ -820,14 +820,14 @@ export default function HomePage() {
                         <span>
                           {result.matchedType === "fallback"
                             ? getFallbackGuide(result.dayStage.slug).summary
-                            : "상세 보기"}
+                            : "이유 자세히 보기"}
                         </span>
                         <span className="summary-chevron" aria-hidden="true">
                           ▾
                         </span>
                       </summary>
                       <div className="detail-group">
-                        <strong>왜 이렇게 봤나요?</strong>
+                        <strong>이렇게 판단한 이유</strong>
                         <ul className="detail-list">
                           {detailTraits.map((trait) => (
                             <li key={trait}>{trait}</li>
@@ -837,7 +837,7 @@ export default function HomePage() {
                       </div>
                       {detailChoiceTips.length > 0 ? (
                         <div className="detail-group">
-                          <strong>대신 이렇게 고르세요</strong>
+                          <strong>이럴 때는 이렇게 고르세요</strong>
                           <ul className="detail-list">
                             {detailChoiceTips.map((point) => (
                               <li key={point}>{point}</li>
@@ -874,7 +874,7 @@ export default function HomePage() {
               {result.similarFoods.length >= 2 ? (
                 <article className="panel-card">
                   <div className="panel-header">
-                    <h3>대신 먹을 수 있어요</h3>
+                    <h3>비슷한 음식으로 바꿔보세요</h3>
                   </div>
                   <div className="action-chip-list">
                     {result.similarFoods.slice(0, 3).map((food) => (
@@ -897,17 +897,10 @@ export default function HomePage() {
 
         <section className="guide-section">
           <h2 className="guide-heading">FAQ / 가이드</h2>
+          <p className="guide-caption">
+            검사 일정과 장정결제 복용 방법은 병원 안내를 먼저 따라주세요.
+          </p>
           <div className="guide-shell">
-            <details className="guide-item guide-item-intro">
-              <summary className="guide-summary">
-                <span>먼저 이렇게 이해하면 쉬워요</span>
-                <span className="summary-chevron" aria-hidden="true">
-                  ▾
-                </span>
-              </summary>
-              <p>검색 결과는 지금 시점의 빠른 판단용이에요.</p>
-              <p>검사 일정과 장정결제 복용 방법은 병원 안내를 가장 먼저 따라주세요.</p>
-            </details>
             {faqItems.map((item) => (
               <details key={item.question} className="guide-item">
                 <summary className="guide-summary">
@@ -1566,6 +1559,13 @@ export default function HomePage() {
           letter-spacing: -0.02em;
         }
 
+        .guide-caption {
+          margin: 8px 0 0;
+          color: var(--muted);
+          font-size: 14px;
+          line-height: 1.6;
+        }
+
         .guide-shell {
           margin-top: 14px;
           border-top: 1px solid var(--line);
@@ -1582,11 +1582,6 @@ export default function HomePage() {
           padding: 18px 0;
           color: var(--text);
           box-shadow: none;
-        }
-
-        .guide-item-intro {
-          border-top: none;
-          background: transparent;
         }
 
         .guide-summary {
