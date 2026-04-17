@@ -852,12 +852,10 @@ export default function HomePage() {
         }
 
         .hero-card {
-          position: relative;
-          padding: 18px 18px 20px;
-          border-radius: 24px;
-          border: 1px solid var(--line);
-          background: var(--surface);
-          box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+          padding: 8px 0 20px;
+          border: none;
+          background: transparent;
+          box-shadow: none;
         }
 
         .hero-top {
@@ -979,18 +977,17 @@ export default function HomePage() {
         }
 
         .hero-copy-block {
-          margin-top: 20px;
+          margin-top: 18px;
           max-width: 100%;
         }
 
         .hero-title {
           margin: 0;
           font-size: clamp(34px, 5.4vw, 42px);
-          line-height: 1.02;
+          line-height: 1.04;
           letter-spacing: -0.04em;
           font-weight: 800;
-          max-width: 560px;
-          text-wrap: balance;
+          max-width: 12em;
         }
 
         .hero-copy {
@@ -1002,43 +999,45 @@ export default function HomePage() {
         }
 
         .search-panel {
-          position: relative;
           display: grid;
-          gap: 12px;
-          margin-top: 20px;
-          padding: 16px;
-          border-radius: 18px;
-          border: 1px solid var(--line);
-          background: var(--surface-soft);
+          gap: 14px;
+          margin-top: 24px;
+          padding: 20px 0 0;
+          border-top: 1px solid var(--line);
+          border-radius: 0;
+          border-right: none;
+          border-bottom: none;
+          border-left: none;
+          background: transparent;
           box-shadow: none;
         }
 
         .stage-row {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 6px;
-          padding: 4px;
-          border: 1px solid var(--line);
-          border-radius: 14px;
-          background: #f3f4f6;
+          gap: 0;
+          padding: 0;
+          border: none;
+          border-bottom: 1px solid var(--line);
+          border-radius: 0;
+          background: transparent;
         }
 
         .stage-button {
-          border: 1px solid transparent;
-          border-bottom: none;
+          border: none;
+          border-bottom: 2px solid transparent;
           background: transparent;
-          border-radius: 12px;
-          padding: 12px 8px 10px;
+          border-radius: 0;
+          padding: 0 8px 12px;
           text-align: center;
           cursor: pointer;
           display: grid;
-          gap: 2px;
+          gap: 1px;
           justify-items: center;
           transition:
             border-color 0.15s ease,
             color 0.15s ease,
-            background 0.15s ease,
-            box-shadow 0.15s ease;
+            background 0.15s ease;
         }
 
         .stage-button-label {
@@ -1058,9 +1057,9 @@ export default function HomePage() {
         }
 
         .stage-button.is-active {
-          border-color: #d7e2fd;
-          background: #ffffff;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+          border-color: var(--primary);
+          background: transparent;
+          box-shadow: none;
         }
 
         .stage-button.is-active span {
@@ -1083,7 +1082,7 @@ export default function HomePage() {
 
         .search-input {
           height: 56px;
-          border-radius: 14px;
+          border-radius: 12px;
           border: 1px solid var(--line-strong);
           padding: 0 18px;
           font-size: 16px;
@@ -1134,7 +1133,7 @@ export default function HomePage() {
         .quick-row {
           display: grid;
           gap: 8px;
-          padding-top: 6px;
+          padding-top: 4px;
         }
 
         .quick-chips {
@@ -1173,17 +1172,17 @@ export default function HomePage() {
 
         .result-stack {
           display: grid;
-          gap: 12px;
-          margin-top: 16px;
+          gap: 18px;
+          margin-top: 24px;
         }
 
         .result-hero {
-          padding: 20px;
-          background: #ffffff !important;
-          border: 1px solid var(--line);
+          padding: 0 0 0 20px;
+          background: transparent !important;
+          border: none;
           border-left: 4px solid currentColor;
-          border-radius: 18px;
-          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+          border-radius: 0;
+          box-shadow: none;
         }
 
         .result-main {
@@ -1375,11 +1374,12 @@ export default function HomePage() {
         }
 
         .panel-card {
-          background: #ffffff;
-          padding: 18px;
-          border: 1px solid var(--line);
-          border-radius: 18px;
-          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+          background: transparent;
+          padding: 18px 0 0;
+          border: none;
+          border-top: 1px solid var(--line);
+          border-radius: 0;
+          box-shadow: none;
         }
 
         .guide-section {
@@ -1444,25 +1444,25 @@ export default function HomePage() {
 
         .guide-shell {
           margin-top: 14px;
-          border: 1px solid var(--line);
-          border-radius: 18px;
-          background: #ffffff;
-          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
-          overflow: hidden;
+          border-top: 1px solid var(--line);
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          overflow: visible;
         }
 
         .guide-item {
           border-top: 1px solid var(--line);
           background: transparent;
           border-radius: 0;
-          padding: 18px;
+          padding: 18px 0;
           color: var(--text);
           box-shadow: none;
         }
 
         .guide-item-intro {
           border-top: none;
-          background: #ffffff;
+          background: transparent;
         }
 
         .guide-item h3 {
@@ -1498,18 +1498,18 @@ export default function HomePage() {
 
           .hero-card,
           .panel-card {
-            border-radius: 20px;
+            border-radius: 0;
           }
 
           .result-hero {
-            border-radius: 16px;
-            padding: 18px;
+            border-radius: 0;
+            padding: 0 0 0 16px;
           }
 
           .hero-title {
             font-size: 34px;
             line-height: 1.04;
-            max-width: 9.2em;
+            max-width: 8.6em;
           }
 
           .hero-top {
@@ -1549,12 +1549,12 @@ export default function HomePage() {
           .stage-row {
             width: 100%;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 6px;
-            padding: 4px;
+            gap: 0;
+            padding: 0;
           }
 
           .stage-button {
-            padding: 10px 6px 9px;
+            padding: 0 6px 10px;
           }
 
           .stage-button span {
@@ -1593,8 +1593,8 @@ export default function HomePage() {
           }
 
           .search-panel {
-            padding: 14px;
-            border-radius: 16px;
+            padding: 18px 0 0;
+            border-radius: 0;
           }
         }
 
