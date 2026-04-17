@@ -140,11 +140,21 @@ type FoodForMatch = Prisma.FoodGetPayload<{
             foodTag: true;
           };
         };
+        foodGroupSources: {
+          include: {
+            source: true;
+          };
+        };
       };
     };
     tagMaps: {
       include: {
         foodTag: true;
+      };
+    };
+    sourceLinks: {
+      include: {
+        source: true;
       };
     };
   };
@@ -161,11 +171,21 @@ type AliasMatch = Prisma.FoodAliasGetPayload<{
                 foodTag: true;
               };
             };
+            foodGroupSources: {
+              include: {
+                source: true;
+              };
+            };
           };
         };
         tagMaps: {
           include: {
             foodTag: true;
+          };
+        };
+        sourceLinks: {
+          include: {
+            source: true;
           };
         };
       };
@@ -184,6 +204,11 @@ type FoodGroupDetail = Prisma.FoodGroupGetPayload<{
     groupTags: {
       include: {
         foodTag: true;
+      };
+    };
+    foodGroupSources: {
+      include: {
+        source: true;
       };
     };
   };
@@ -272,6 +297,83 @@ function toCandidateTagsFromFoodGroup(foodGroup: FoodGroupDetail): CandidateTag[
   }));
 }
 
+function dedupeReferences<T extends { label: string; url: string }>(references: T[]) {
+  return references.filter(
+    (reference, index, array) =>
+      array.findIndex(
+        (candidate) =>
+          candidate.url === reference.url || candidate.label === reference.label,
+      ) === index,
+  );
+}
+
+function distributeUniqueReferencesAcrossRules<
+  T extends { references: Array<{ label: string; url: string }> },
+>(rules: T[]) {
+  const seenKeys = new Set<string>();
+
+  return rules.map((rule) => ({
+    ...rule,
+    references: rule.references.filter((reference) => {
+      const key = reference.url || reference.label;
+      if (seenKeys.has(key)) {
+        return false;
+      }
+
+      seenKeys.add(key);
+      return true;
+    }),
+  }));
+}
+
+function getFoodDirectReferences(food: FoodForMatch | AliasMatch["food"]) {
+  return dedupeReferences(
+    [
+      ...food.sourceLinks
+        .map((link) => {
+          if (!link.source.url) {
+            return null;
+          }
+
+          return {
+            label: link.source.name,
+            url: link.source.url,
+          };
+        })
+        .filter((value): value is { label: string; url: string } => Boolean(value)),
+      ...food.primaryFoodGroup.foodGroupSources
+        .map((link) => {
+          if (!link.source.url) {
+            return null;
+          }
+
+          return {
+            label: link.source.name,
+            url: link.source.url,
+          };
+        })
+        .filter((value): value is { label: string; url: string } => Boolean(value)),
+    ],
+  );
+}
+
+function getFoodGroupDirectReferences(foodGroup: FoodGroupDetail) {
+  return dedupeReferences(
+    foodGroup.foodGroupSources
+      .map((link) => {
+        if (!link.source.url) {
+          return null;
+        }
+
+        return {
+          label: link.source.name,
+          url: link.source.url,
+        };
+      })
+      .filter((value): value is { label: string; url: string } => Boolean(value)),
+  );
+}
+
 async function findExactFood(normalizedQuery: string) {
   return prisma.food.findUnique({
     where: { normalizedName: normalizedQuery },
@@ -283,11 +385,21 @@ async function findExactFood(normalizedQuery: string) {
               foodTag: true,
             },
           },
+          foodGroupSources: {
+            include: {
+              source: true,
+            },
+          },
         },
       },
       tagMaps: {
         include: {
           foodTag: true,
+        },
+      },
+      sourceLinks: {
+        include: {
+          source: true,
         },
       },
     },
@@ -307,11 +419,21 @@ async function findAlias(normalizedQuery: string) {
                   foodTag: true,
                 },
               },
+              foodGroupSources: {
+                include: {
+                  source: true,
+                },
+              },
             },
           },
           tagMaps: {
             include: {
               foodTag: true,
+            },
+          },
+          sourceLinks: {
+            include: {
+              source: true,
             },
           },
         },
@@ -377,6 +499,11 @@ async function findFoodGroupDetail(foodGroupId: string) {
           foodTag: true,
         },
       },
+      foodGroupSources: {
+        include: {
+          source: true,
+        },
+      },
     },
   });
 }
@@ -429,25 +556,27 @@ function buildStageRules(
     status: rule.status,
     rationale: rule.rationale,
     priority: rule.priority,
-    references: rule.sourceLinks
-      .map((link) => {
-        if (!link.source.url) {
-          return null;
-        }
+    references: dedupeReferences(
+      rule.sourceLinks
+        .map((link) => {
+          if (!link.source.url) {
+            return null;
+          }
 
-        return {
-          label: link.source.name,
-          url: link.source.url,
-        };
-      })
-      .filter(
-        (
-          value,
-        ): value is {
-          label: string;
-          url: string;
-        } => Boolean(value),
-      ),
+          return {
+            label: link.source.name,
+            url: link.source.url,
+          };
+        })
+        .filter(
+          (
+            value,
+          ): value is {
+            label: string;
+            url: string;
+          } => Boolean(value),
+        ),
+    ),
   }));
 }
 
@@ -846,6 +975,7 @@ export async function checkFoodByQuery(input: {
     let similarFoods: CheckFoodResult["similarFoods"] = [];
     let matchedId: string | null = null;
     let matchedFoodId: string | null = null;
+    let directReferences: Array<{ label: string; url: string }> = [];
 
     const [exactFood, aliasMatch] = normalizedQuery
       ? await Promise.all([
@@ -892,6 +1022,7 @@ export async function checkFoodByQuery(input: {
         slug: exactFood.slug,
         name: exactFood.name,
       };
+      directReferences = getFoodDirectReferences(exactFood);
       candidateTags = await measureStep("tag_lookup", requestContext, timings, async () =>
         Promise.resolve(toCandidateTagsFromFood(exactFood)),
       );
@@ -909,6 +1040,7 @@ export async function checkFoodByQuery(input: {
           name: aliasMatch.food.name,
         },
       };
+      directReferences = getFoodDirectReferences(aliasMatch.food);
       candidateTags = await measureStep("tag_lookup", requestContext, timings, async () =>
         Promise.resolve(toCandidateTagsFromFood(aliasMatch.food)),
       );
@@ -948,6 +1080,7 @@ export async function checkFoodByQuery(input: {
             slug: foodGroup.slug,
             name: foodGroup.name,
           };
+          directReferences = getFoodGroupDirectReferences(foodGroup);
           candidateTags = await measureStep("tag_lookup", requestContext, timings, async () =>
             Promise.resolve(toCandidateTagsFromFoodGroup(foodGroup)),
           );
@@ -1001,6 +1134,12 @@ export async function checkFoodByQuery(input: {
       tags: candidateTags,
       rules: stageBundle.stageRules,
     });
+    const topAppliedRules = distributeUniqueReferencesAcrossRules(
+      judgement.topAppliedRules.map((rule) => ({
+        ...rule,
+        references: dedupeReferences([...directReferences, ...rule.references]),
+      })),
+    );
 
     logCheckFood("judgement.result", {
       ...requestContext,
@@ -1008,7 +1147,7 @@ export async function checkFoodByQuery(input: {
       status: judgement.status,
       confidenceGrade: judgement.confidenceGrade,
       appliedTagSlugs: judgement.appliedTagSlugs,
-      topAppliedRules: judgement.topAppliedRules,
+      topAppliedRules,
       usedFallbackReason: judgement.usedFallbackReason,
     });
 
@@ -1022,7 +1161,7 @@ export async function checkFoodByQuery(input: {
 
     const logMetadata: Prisma.JsonObject = {
       appliedTagSlugs: judgement.appliedTagSlugs,
-      topAppliedRules: judgement.topAppliedRules.map((rule) => ({
+      topAppliedRules: topAppliedRules.map((rule) => ({
         tagSlug: rule.tagSlug,
         status: rule.status,
         rationale: rule.rationale,
@@ -1101,7 +1240,7 @@ export async function checkFoodByQuery(input: {
       primaryReason: judgement.primaryReason,
       secondaryReason: judgement.secondaryReason,
       appliedTagSlugs: judgement.appliedTagSlugs,
-      topAppliedRules: judgement.topAppliedRules.map(toUiRule),
+      topAppliedRules: topAppliedRules.map(toUiRule),
       similarFoods,
       recommendedMenus: recommendedMenus.map((menu) => ({
         id: menu.id,

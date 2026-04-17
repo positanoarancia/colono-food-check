@@ -684,19 +684,170 @@ export const sources = [
   { id: "source_internal", slug: "health-signal-v1", name: "건강신호등 내부 큐레이션 v1", kind: "internal_guide" as const, publisher: "건강신호등", url: null, note: null },
 ];
 
+const foodIdByName = new Map(foods.map((food) => [food.name, food.id]));
+const foodGroupIdBySlug = new Map(foodGroups.map((group) => [group.slug, group.id]));
+
+function makeFoodSources(
+  foodNames: string[],
+  sourceIds: string[],
+  evidenceNote: string,
+  isPrimary = false,
+) {
+  return foodNames.flatMap((foodName) => {
+    const foodId = foodIdByName.get(foodName);
+    if (!foodId) {
+      return [];
+    }
+
+    return sourceIds.map((sourceId) => ({
+      foodId,
+      sourceId,
+      evidenceNote,
+      isPrimary,
+    }));
+  });
+}
+
+function makeFoodGroupSources(
+  groupSlugs: string[],
+  sourceIds: string[],
+  evidenceNote: string,
+  isPrimary = false,
+) {
+  return groupSlugs.flatMap((groupSlug) => {
+    const foodGroupId = foodGroupIdBySlug.get(groupSlug);
+    if (!foodGroupId) {
+      return [];
+    }
+
+    return sourceIds.map((sourceId) => ({
+      foodGroupId,
+      sourceId,
+      evidenceNote,
+      isPrimary,
+    }));
+  });
+}
+
 export const foodSources: {
   foodId: string;
   sourceId: string;
   evidenceNote: string;
   isPrimary: boolean;
-}[] = [];
+}[] = [
+  ...makeFoodSources(
+    [
+      "깨죽",
+      "고구마",
+      "김치류",
+      "고기류",
+      "해조류",
+      "콩",
+      "버섯류",
+      "미나리",
+      "고추씨",
+      "옥수수",
+      "흰쌀밥",
+      "흰죽",
+      "생선",
+      "카스테라",
+      "계란류",
+      "두부류",
+      "건더기없는국물",
+      "녹차",
+      "이온음료",
+      "사과",
+      "배",
+      "바나나",
+      "감자",
+    ],
+    ["source_cmc"],
+    "서울성모병원 대장내시경 안내문 직접 언급 음식",
+    true,
+  ),
+  ...makeFoodSources(
+    [
+      "흰쌀밥",
+      "흰죽",
+      "계란류",
+      "두부류",
+      "묵",
+      "국물류",
+      "빵종류",
+      "맑은음료류",
+      "녹차",
+      "이온음료",
+      "사과주스",
+    ],
+    ["source_eulji"],
+    "노원을지대학교병원 안내문 직접 언급 허용 음식",
+    true,
+  ),
+  ...makeFoodSources(
+    [
+      "흰쌀밥",
+      "흰죽",
+      "카스테라",
+      "계란류",
+      "두부류",
+      "국물류",
+      "빵종류",
+      "사과",
+      "배",
+      "바나나",
+      "감자",
+      "씨있는과일류",
+      "김치류",
+      "해조류",
+      "버섯류",
+    ],
+    ["source_ssmc"],
+    "삼성서울병원 대장내시경 안내문 직접 언급 음식 또는 음식군",
+    true,
+  ),
+  ...makeFoodSources(
+    ["설렁탕", "곰탕", "갈비탕", "삼계탕"],
+    ["source_gs"],
+    "강남세브란스병원 안내문에서 국물 식사 예시로 직접 언급된 음식",
+    true,
+  ),
+].filter(
+  (item, index, array) =>
+    array.findIndex(
+      (candidate) => candidate.foodId === item.foodId && candidate.sourceId === item.sourceId,
+    ) === index,
+);
 
 export const foodGroupSources: {
   foodGroupId: string;
   sourceId: string;
   evidenceNote: string;
   isPrimary: boolean;
-}[] = [];
+}[] = [
+  ...makeFoodGroupSources(
+    ["kimchi-family", "mushroom-family", "bean-family", "leafy-veg", "seeded-veg"],
+    ["source_cmc", "source_amc"],
+    "병원 안내문에서 직접 제한하는 음식군",
+    true,
+  ),
+  ...makeFoodGroupSources(
+    ["oily-seasoning", "broth-meal", "cutlet", "spicy-stirfry", "fried-rice"],
+    ["source_gs"],
+    "강남세브란스병원 안내문 일반 제한 기준과 연결되는 음식군",
+  ),
+  ...makeFoodGroupSources(
+    ["white-porridge", "bread", "clear-liquid", "soft-protein"],
+    ["source_eulji", "source_ssmc", "source_cmc"],
+    "병원 안내문 허용 예시에 직접 등장하는 음식군",
+    true,
+  ),
+].filter(
+  (item, index, array) =>
+    array.findIndex(
+      (candidate) =>
+        candidate.foodGroupId === item.foodGroupId && candidate.sourceId === item.sourceId,
+    ) === index,
+);
 
 const makeRuleSources = (
   judgementRuleIds: string[],

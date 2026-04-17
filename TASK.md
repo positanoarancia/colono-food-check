@@ -221,6 +221,8 @@
 * [x] FAQ 질문을 공통 원칙 중심으로 다시 정리하고, 상세/대체 음식 섹션 라벨이 서로 겹치지 않게 보정
 * [x] fallback 문구를 `등록된 음식 기준이 없다`는 표현으로 정리하고, fallback 상세를 한 섹션 기준 안내로 단순화
 * [x] FAQ 답변을 한 문장 중심으로 더 짧게 축약해 공통 원칙만 빠르게 읽히도록 정리
+* [x] SearchLog 3차 보강으로 `foodSource`/`foodGroupSource` direct 근거를 실제 seed와 결과 응답에 연결
+* [x] 결과 응답에서 direct reference + rule reference를 전역 dedupe해 같은 병원 링크 반복을 축소
 * [x] fallback 박스 제목을 판단 방법 중심 문구로 바꾸고 어려운 표현(`잔사`) 제거
 * [x] fallback 상세 토글을 날짜별 자가판단 가이드로 맞추고 문구 가독성을 위한 폰트/줄길이 보정
 * [x] fallback 결과 문구를 날짜별 자가판단형 안내로 나눠 기준이 없을 때도 다음 판단 기준을 바로 볼 수 있게 보정
@@ -429,9 +431,9 @@
 
 ## 현재 우선순위
 
-1. fallback 검색어 보강 3차
-2. alias 대량 보강 3차
-3. direct food source 보강
-4. 참고 근거 링크 dedupe 보강
+1. fallback 검색어 보강 4차
+2. alias 대량 보강 4차
+3. direct food source coverage 확대
+4. representative QA 확대
 5. SearchLog 운영 루프 재시작
 6. production 실기기 확인
