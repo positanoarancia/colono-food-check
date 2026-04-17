@@ -818,14 +818,14 @@ export default function HomePage() {
       <style jsx>{`
         :global(body) {
           margin: 0;
-          background: #f3f7f7;
+          background: #eef4f3;
         }
 
         .page {
           --primary: #3569e8;
           --primary-strong: #1d4ed8;
           --primary-soft: #eef4ff;
-          --bg: #f3f7f7;
+          --bg: #eef4f3;
           --surface: #ffffff;
           --surface-soft: #f7fbfa;
           --surface-sage: #edf5f1;
@@ -837,7 +837,9 @@ export default function HomePage() {
           --sage-strong: #41685b;
           min-height: 100vh;
           padding: 28px 16px 72px;
-          background: var(--bg);
+          background:
+            radial-gradient(circle at top left, rgba(121, 179, 157, 0.12), transparent 28%),
+            linear-gradient(180deg, #f4f8f7 0%, var(--bg) 100%);
           color: var(--text);
           font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif;
           word-break: keep-all;
@@ -851,31 +853,39 @@ export default function HomePage() {
           width: 100%;
         }
 
-        .hero-card,
-        .panel-card,
-        .result-hero {
-          border-radius: 0;
-          border: none;
-          box-shadow: none;
-        }
-
         .hero-card {
           position: relative;
-          background: transparent;
-          padding: 8px 0 24px;
+          overflow: hidden;
+          padding: 18px 18px 20px;
+          border-radius: 28px;
+          border: 1px solid rgba(214, 226, 223, 0.95);
+          background:
+            radial-gradient(circle at top right, rgba(101, 155, 132, 0.16), transparent 28%),
+            radial-gradient(circle at top left, rgba(72, 117, 235, 0.1), transparent 24%),
+            linear-gradient(180deg, rgba(247, 251, 250, 0.98) 0%, rgba(255, 255, 255, 0.98) 100%);
+          box-shadow: 0 20px 48px rgba(74, 99, 91, 0.1);
+        }
+
+        .hero-card::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 24%);
+          pointer-events: none;
         }
 
         .hero-top {
+          position: relative;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          min-height: 48px;
-          padding: 8px 10px;
-          border-radius: 18px;
-          border: 1px solid #dce8e4;
+          min-height: 44px;
+          padding: 0;
+          border-radius: 0;
+          border: none;
           background:
-            linear-gradient(135deg, rgba(237, 245, 241, 0.92) 0%, rgba(244, 248, 255, 0.9) 100%);
+            none;
         }
 
         .eyebrow {
@@ -883,11 +893,16 @@ export default function HomePage() {
           align-items: center;
           gap: 8px;
           color: var(--sage-strong);
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.02em;
           line-height: 1.2;
-          flex: 1 1 auto;
+          flex: 0 0 auto;
+          padding: 8px 12px;
+          border-radius: 999px;
+          background: rgba(237, 245, 241, 0.9);
+          border: 1px solid #dbe8e3;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
         }
 
         .eyebrow::before {
@@ -909,8 +924,8 @@ export default function HomePage() {
 
         .share-button {
           min-height: 36px;
-          border: 1px solid #cfdcf8;
-          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid #d6def7;
+          background: rgba(255, 255, 255, 0.96);
           color: var(--primary-strong);
           display: inline-flex;
           align-items: center;
@@ -921,7 +936,7 @@ export default function HomePage() {
           border-radius: 999px;
           font-weight: 700;
           font-size: 13px;
-          box-shadow: none;
+          box-shadow: 0 8px 20px rgba(53, 105, 232, 0.08);
           transition:
             color 0.15s ease,
             opacity 0.15s ease,
@@ -979,17 +994,19 @@ export default function HomePage() {
         }
 
         .hero-copy-block {
-          margin-top: 18px;
+          position: relative;
+          margin-top: 20px;
           max-width: 100%;
         }
 
         .hero-title {
           margin: 0;
-          font-size: clamp(34px, 5vw, 40px);
-          line-height: 1.06;
+          font-size: clamp(34px, 5.4vw, 42px);
+          line-height: 1.02;
           letter-spacing: -0.04em;
           font-weight: 800;
-          max-width: 620px;
+          max-width: 560px;
+          text-wrap: balance;
         }
 
         .hero-copy {
@@ -997,40 +1014,48 @@ export default function HomePage() {
           color: var(--muted);
           font-size: 15px;
           line-height: 1.6;
-          max-width: 620px;
+          max-width: 500px;
         }
 
         .search-panel {
+          position: relative;
           display: grid;
           gap: 12px;
-          margin-top: 22px;
+          margin-top: 20px;
           padding: 16px;
-          border-radius: 20px;
-          border: 1px solid #dce7e4;
+          border-radius: 22px;
+          border: 1px solid rgba(214, 225, 239, 0.95);
           background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 251, 250, 0.98) 100%);
-          box-shadow: 0 16px 34px rgba(76, 99, 94, 0.06);
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.96) 100%);
+          box-shadow: 0 14px 30px rgba(69, 91, 126, 0.08);
         }
 
         .stage-row {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0;
-          border-bottom: 1px solid var(--line);
+          gap: 8px;
+          padding: 4px;
+          border: 1px solid #dbe5e2;
+          border-radius: 18px;
+          background: linear-gradient(180deg, #f4f8f7 0%, #eef4f3 100%);
         }
 
         .stage-button {
-          border: none;
-          border-bottom: 2px solid transparent;
+          border: 1px solid transparent;
+          border-bottom: none;
           background: transparent;
-          border-radius: 0;
-          padding: 0 0 10px;
+          border-radius: 14px;
+          padding: 12px 8px 10px;
           text-align: center;
           cursor: pointer;
           display: grid;
-          gap: 1px;
+          gap: 2px;
           justify-items: center;
-          transition: border-color 0.15s ease, color 0.15s ease;
+          transition:
+            border-color 0.15s ease,
+            color 0.15s ease,
+            background 0.15s ease,
+            box-shadow 0.15s ease;
         }
 
         .stage-button-label {
@@ -1050,7 +1075,9 @@ export default function HomePage() {
         }
 
         .stage-button.is-active {
-          border-color: var(--primary);
+          border-color: #d7e2fd;
+          background: rgba(255, 255, 255, 0.96);
+          box-shadow: 0 10px 18px rgba(53, 105, 232, 0.08);
         }
 
         .stage-button.is-active span {
@@ -1064,7 +1091,7 @@ export default function HomePage() {
         .search-row {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 12px;
         }
 
         .search-input-wrap {
@@ -1079,9 +1106,10 @@ export default function HomePage() {
           font-size: 16px;
           font-weight: 500;
           outline: none;
-          background: var(--surface);
+          background: #ffffff;
           color: var(--text);
           line-height: 1.6;
+          box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4);
         }
 
         .search-input:focus {
@@ -1103,6 +1131,7 @@ export default function HomePage() {
           cursor: pointer;
           width: 100%;
           min-height: 52px;
+          box-shadow: 0 14px 24px rgba(53, 105, 232, 0.22);
         }
 
         .search-button:disabled {
@@ -1122,7 +1151,7 @@ export default function HomePage() {
         .quick-row {
           display: grid;
           gap: 8px;
-          padding-top: 8px;
+          padding-top: 6px;
         }
 
         .quick-chips {
@@ -1133,7 +1162,7 @@ export default function HomePage() {
           overflow-y: hidden;
           scrollbar-width: none;
           -webkit-overflow-scrolling: touch;
-          padding-bottom: 2px;
+          padding: 2px 2px 4px;
         }
 
         .quick-chips::-webkit-scrollbar {
@@ -1150,6 +1179,7 @@ export default function HomePage() {
           font-weight: 600;
           flex: 0 0 auto;
           white-space: nowrap;
+          box-shadow: 0 8px 18px rgba(76, 99, 94, 0.05);
         }
 
         .error-text {
@@ -1161,6 +1191,7 @@ export default function HomePage() {
         .result-stack {
           display: grid;
           gap: 0;
+          margin-top: 8px;
         }
 
         .result-hero {
@@ -1364,7 +1395,7 @@ export default function HomePage() {
         }
 
         .guide-section {
-          padding: 48px 0 0;
+          padding: 44px 0 0;
         }
 
         .panel-header {
@@ -1420,25 +1451,26 @@ export default function HomePage() {
           font-size: 18px;
           line-height: 1.5;
           color: var(--text);
+          letter-spacing: -0.02em;
         }
 
         .guide-list {
           display: grid;
-          gap: 10px;
-          margin-top: 12px;
+          gap: 12px;
+          margin-top: 14px;
         }
 
         .guide-item {
           border: 1px solid #dce7e4;
-          background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
-          border-radius: 16px;
+          background: linear-gradient(180deg, #ffffff 0%, #f6fbf9 100%);
+          border-radius: 18px;
           padding: 18px;
           color: var(--text);
-          box-shadow: 0 12px 28px rgba(76, 99, 94, 0.06);
+          box-shadow: 0 14px 28px rgba(76, 99, 94, 0.07);
         }
 
         .guide-item-intro {
-          background: linear-gradient(180deg, #ffffff 0%, #eff7f3 58%, #f4f8ff 100%);
+          background: linear-gradient(180deg, #ffffff 0%, #edf6f1 52%, #f3f7ff 100%);
         }
 
         .guide-item h3 {
@@ -1474,9 +1506,7 @@ export default function HomePage() {
 
           .hero-card,
           .panel-card {
-            border-radius: 0;
-            padding-left: 0;
-            padding-right: 0;
+            border-radius: 24px;
           }
 
           .result-hero {
@@ -1487,13 +1517,14 @@ export default function HomePage() {
 
           .hero-title {
             font-size: 34px;
-            line-height: 1.08;
+            line-height: 1.04;
+            max-width: 9.2em;
           }
 
           .hero-top {
             align-items: center;
             gap: 10px;
-            padding: 8px 10px;
+            min-height: 40px;
           }
 
           .share-button {
@@ -1503,7 +1534,8 @@ export default function HomePage() {
           }
 
           .eyebrow {
-            font-size: 13px;
+            font-size: 12px;
+            padding: 7px 10px;
           }
 
           .share-label-mobile {
@@ -1526,10 +1558,12 @@ export default function HomePage() {
           .stage-row {
             width: 100%;
             grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            padding: 4px;
           }
 
           .stage-button {
-            padding: 10px 8px;
+            padding: 10px 6px 9px;
           }
 
           .stage-button span {
