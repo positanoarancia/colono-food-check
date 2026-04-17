@@ -83,6 +83,7 @@ const foodGroups = [
 }));
 
 const foodTags = [
+  { id: "tag_d1_soft_allowed", slug: "d1-soft-allowed", name: "전날허용식", description: "전날에도 비교적 무난하게 안내하는 대표 저잔사 음식" },
   { id: "tag_low_fiber", slug: "low-fiber", name: "저섬유", description: "장에 남는 섬유질이 비교적 적은 음식" },
   { id: "tag_high_fiber", slug: "high-fiber", name: "고섬유", description: "잔여물이 남기 쉬운 섬유질이 많은 음식" },
   { id: "tag_seeded", slug: "seeded", name: "씨있음", description: "씨앗이나 알갱이가 많은 음식" },
@@ -132,7 +133,6 @@ const foodGroupTags = [
   ["group_dairy", "tag_dairy"],
   ["group_dairy", "tag_soft"],
   ["group_bread", "tag_low_fiber"],
-  ["group_bread", "tag_processed"],
   ["group_convenience_rice", "tag_processed"],
   ["group_convenience_rice", "tag_chunky"],
   ["group_convenience_meal", "tag_processed"],
@@ -144,7 +144,6 @@ const foodGroupTags = [
   ["group_soft_protein", "tag_low_fiber"],
   ["group_low_fiber_snack", "tag_low_fiber"],
   ["group_low_fiber_snack", "tag_soft"],
-  ["group_low_fiber_snack", "tag_processed"],
   ["group_whole_grain", "tag_whole_grain"],
   ["group_whole_grain", "tag_high_fiber"],
   ["group_root_starch", "tag_chunky"],
@@ -278,6 +277,12 @@ const foodAliases = [
 }));
 
 const foodTagMaps = [
+  ["food_white_porridge", "tag_d1_soft_allowed", "전날에도 비교적 자주 허용되는 대표 죽류다"],
+  ["food_rice_gruel", "tag_d1_soft_allowed", "건더기 적은 미음은 전날에도 비교적 무난하다"],
+  ["food_white_rice", "tag_d1_soft_allowed", "흰쌀밥은 전날 식단 예시로 자주 안내된다"],
+  ["food_castella", "tag_d1_soft_allowed", "카스테라는 전날 허용 간식 예시에 자주 포함된다"],
+  ["food_white_bread", "tag_d1_soft_allowed", "식빵은 전날 허용 식사 예시에 자주 포함된다"],
+  ["food_plain_cracker", "tag_d1_soft_allowed", "플레인 크래커는 전날에도 비교적 무난한 간식이다"],
   ["food_potato", "tag_low_fiber", "껍질 제거 후 소량 섭취 기준"],
   ["food_potato", "tag_soft", "삶거나 으깨면 부담이 적다"],
   ["food_mashed_potato", "tag_low_fiber", "으깬 형태로 더 부드럽다"],
@@ -307,6 +312,8 @@ const foodTagMaps = [
   ["food_coffee", "tag_processed", "카페인 음료는 보수적으로 본다"],
   ["food_milk", "tag_processed", "전날에는 더 엄격하게 본다"],
   ["food_pudding", "tag_soft", "부드러운 간식이지만 가공식품이다"],
+  ["food_pudding", "tag_processed", "가공 간식이라 전날에는 더 보수적으로 본다"],
+  ["food_sandwich", "tag_processed", "빵 외에 속재료 구성이 복합적이다"],
   ["food_sandwich", "tag_chunky", "속재료가 다양하고 건더기가 많다"],
   ["food_malatang", "tag_vegetables_heavy", "다양한 채소와 건더기가 많다"],
   ["food_buldak_noodle", "tag_fried", "조리와 조미가 강하다"],
@@ -366,6 +373,7 @@ const judgementRules = [
   rule("rule_d3_chunky", "stage_colonoscopy_d3", "tag_chunky", "avoid", "건더기가 많아 장에 남는 잔사가 많아질 수 있습니다.", 11),
   rule("rule_d3_red_purple", "stage_colonoscopy_d3", "tag_red_purple", "avoid", "적색·보라색 음식은 검사 중 잔여물이나 출혈과 혼동될 수 있습니다.", 12),
   rule("rule_d1_clear_broth", "stage_colonoscopy_d1", "tag_clear_broth", "allowed", "전날에는 건더기 없는 맑은 유동식이 가장 안전한 선택입니다.", 1),
+  rule("rule_d1_soft_allowed", "stage_colonoscopy_d1", "tag_d1_soft_allowed", "allowed", "전날에도 병원 안내에서 비교적 자주 허용하는 대표 저잔사 음식입니다.", 2),
   rule("rule_d1_low_fiber", "stage_colonoscopy_d1", "tag_low_fiber", "caution", "저섬유라도 고형식은 전날 기준으로는 제한적으로만 보는 편이 안전합니다.", 40),
   rule("rule_d1_soft", "stage_colonoscopy_d1", "tag_soft", "caution", "부드러운 음식이라도 전날에는 맑은 유동식보다 우선하지 않습니다.", 50),
   rule("rule_d1_high_fiber", "stage_colonoscopy_d1", "tag_high_fiber", "avoid", "섬유질이 많아 전날 식단으로는 장에 잔여물이 남을 수 있습니다.", 2),

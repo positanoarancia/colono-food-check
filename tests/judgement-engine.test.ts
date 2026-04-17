@@ -49,6 +49,7 @@ const d3Rules = withRuleDefaults([
 
 const d1Rules = withRuleDefaults([
   { tagId: "clear", tagSlug: "clear-broth", status: "allowed", rationale: "전날에는 건더기 없는 맑은 유동식이 가장 안전한 선택입니다.", priority: 1 },
+  { tagId: "d1SoftAllowed", tagSlug: "d1-soft-allowed", status: "allowed", rationale: "전날에도 병원 안내에서 비교적 자주 허용하는 대표 저잔사 음식입니다.", priority: 2 },
   { tagId: "low", tagSlug: "low-fiber", status: "caution", rationale: "저섬유라도 고형식은 전날 기준으로는 제한적으로만 보는 편이 안전합니다.", priority: 40 },
   { tagId: "soft", tagSlug: "soft-food", status: "caution", rationale: "부드러운 음식이라도 전날에는 맑은 유동식보다 우선하지 않습니다.", priority: 50 },
   { tagId: "high", tagSlug: "high-fiber", status: "avoid", rationale: "섬유질이 많아 전날 식단으로는 장에 잔여물이 남을 수 있습니다.", priority: 2 },
@@ -66,8 +67,8 @@ const d1Rules = withRuleDefaults([
 ]);
 
 const representativeCases = [
-  { food: "흰죽", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
-  { food: "흰쌀밥", tags: ["low"], d5: "allowed", d3: "allowed", d1: "caution" },
+  { food: "흰죽", tags: ["low", "soft", "d1SoftAllowed"], d5: "allowed", d3: "allowed", d1: "allowed" },
+  { food: "흰쌀밥", tags: ["low", "d1SoftAllowed"], d5: "allowed", d3: "allowed", d1: "allowed" },
   { food: "계란찜", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "삶은계란", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "두부", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
@@ -77,11 +78,11 @@ const representativeCases = [
   { food: "바나나", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "사과", tags: ["withPeel"], d5: "caution", d3: "avoid", d1: "avoid" },
   { food: "배", tags: ["withPeel"], d5: "caution", d3: "avoid", d1: "avoid" },
-  { food: "카스테라", tags: ["low", "soft", "processed"], d5: "caution", d3: "caution", d1: "avoid" },
+  { food: "카스테라", tags: ["low", "soft", "d1SoftAllowed"], d5: "allowed", d3: "allowed", d1: "allowed" },
   { food: "푸딩", tags: ["soft", "processed"], d5: "caution", d3: "caution", d1: "avoid" },
   { food: "우유", tags: ["dairy", "processed"], d5: "caution", d3: "caution", d1: "avoid" },
   { food: "요거트", tags: ["dairy", "processed"], d5: "caution", d3: "caution", d1: "avoid" },
-  { food: "크래커", tags: ["low", "processed"], d5: "caution", d3: "caution", d1: "avoid" },
+  { food: "크래커", tags: ["low", "soft", "d1SoftAllowed"], d5: "allowed", d3: "allowed", d1: "allowed" },
   { food: "우동", tags: ["low"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "잔치국수", tags: ["low"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "라면", tags: ["processed", "spicy", "chunky"], d5: "caution", d3: "avoid", d1: "avoid" },
@@ -111,8 +112,8 @@ const representativeCases = [
 function tagsToCandidates(tags: string[]) {
   return tags.map((tagId) => ({
     tagId,
-    tagSlug: tagId,
-    source: "food_group" as const,
+    tagSlug: tagId === "d1SoftAllowed" ? "d1-soft-allowed" : tagId,
+    source: tagId === "d1SoftAllowed" ? ("food" as const) : ("food_group" as const),
   }));
 }
 

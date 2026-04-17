@@ -116,6 +116,7 @@ const statusConfig = {
 } as const;
 
 const detailBadgeLabel: Record<string, string> = {
+  "d1-soft-allowed": "전날 허용식",
   "vegetables-heavy": "채소 많음",
   "high-fiber": "섬유질 많음",
   chunky: "건더기 많음",
@@ -181,6 +182,10 @@ function getFoodTraits(result: CheckResponse) {
 
   if (tagSet.has("low-fiber") || tagSet.has("soft-food")) {
     traits.push("부드럽고 부담이 적은 편이에요");
+  }
+
+  if (tagSet.has("d1-soft-allowed")) {
+    traits.push("전날에도 비교적 무난하게 안내하는 대표 음식이에요");
   }
 
   if (tagSet.has("clear-broth")) {
@@ -250,6 +255,13 @@ function getShortReasons(result: CheckResponse) {
   const tagSet = new Set(result.appliedTagSlugs);
 
   if (result.status === "allowed") {
+    if (tagSet.has("d1-soft-allowed")) {
+      return {
+        primary: "전날에도 비교적 무난하게 먹는 편이에요",
+        secondary: "양을 많이 늘리기보다는 가볍게 드세요",
+      };
+    }
+
     if (tagSet.has("clear-broth")) {
       return {
         primary: "맑고 부담이 적어서 괜찮아요",
@@ -330,6 +342,8 @@ export default function HomePage() {
   const prewarmFinishedRef = useRef(false);
   const firstSearchLoggedRef = useRef(false);
   const shareFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resultSectionRef = useRef<HTMLElement | null>(null);
+  const pendingResultScrollRef = useRef(false);
 
   function setShareFeedbackWithTimeout(message: string) {
     setShareFeedback(message);
@@ -351,6 +365,26 @@ export default function HomePage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!result || !pendingResultScrollRef.current) {
+      return;
+    }
+
+    pendingResultScrollRef.current = false;
+
+    window.requestAnimationFrame(() => {
+      if (!resultSectionRef.current) {
+        return;
+      }
+
+      const top = resultSectionRef.current.getBoundingClientRect().top + window.scrollY - 16;
+      window.scrollTo({
+        top: Math.max(top, 0),
+        behavior: "smooth",
+      });
+    });
+  }, [result]);
 
   useEffect(() => {
     if (hasAttemptedPrewarmRef.current) {
@@ -407,15 +441,13 @@ export default function HomePage() {
 
   async function handleShare() {
     const shareData = {
-      title: "건강신호등",
-      text: "대장내시경 전에 먹어도 되는 음식인지 바로 확인할 수 있어요",
       url: window.location.href,
     };
 
     try {
       if (typeof navigator.share === "function") {
         await navigator.share(shareData);
-        setShareFeedbackWithTimeout("링크를 공유할 수 있어요");
+        setShareFeedbackWithTimeout("공유했어요");
         return;
       }
 
@@ -435,7 +467,11 @@ export default function HomePage() {
     }
   }
 
-  async function runSearch(nextQuery: string, nextDayStage = dayStage) {
+  async function runSearch(
+    nextQuery: string,
+    nextDayStage = dayStage,
+    options?: { scrollToResult?: boolean },
+  ) {
     const trimmedQuery = nextQuery.trim();
 
     if (!trimmedQuery) {
@@ -467,6 +503,7 @@ export default function HomePage() {
         throw new Error("error" in data ? data.error : "검색 중 오류가 발생했습니다.");
       }
 
+      pendingResultScrollRef.current = Boolean(options?.scrollToResult);
       setQuery(trimmedQuery);
       setDayStage(nextDayStage);
       setResult(data);
@@ -497,7 +534,7 @@ export default function HomePage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await runSearch(query, dayStage);
+    await runSearch(query, dayStage, { scrollToResult: true });
   }
 
   async function handleStageChange(nextDayStage: string) {
@@ -508,7 +545,7 @@ export default function HomePage() {
     setDayStage(nextDayStage);
 
     if (result?.query) {
-      await runSearch(result.query, nextDayStage);
+      await runSearch(result.query, nextDayStage, { scrollToResult: true });
     }
   }
 
@@ -583,6 +620,7 @@ export default function HomePage() {
                     strokeLinecap="round"
                   />
                 </svg>
+                <span className="share-label">공유하기</span>
               </button>
               {shareFeedback ? <p className="share-feedback">{shareFeedback}</p> : null}
             </div>
@@ -637,7 +675,7 @@ export default function HomePage() {
                   <button
                     key={example}
                     type="button"
-                    onClick={() => runSearch(example)}
+                    onClick={() => runSearch(example, dayStage, { scrollToResult: true })}
                     className="quick-chip"
                   >
                     {example}
@@ -651,7 +689,7 @@ export default function HomePage() {
         </section>
 
         {result && status ? (
-          <section className="result-stack">
+          <section className="result-stack" ref={resultSectionRef}>
             <article className="result-hero" style={{ background: status.bg, color: status.color }}>
               <div className="result-main is-single">
                 <div className="decision-block">
@@ -745,7 +783,7 @@ export default function HomePage() {
                         key={food.id}
                         type="button"
                         className="choice-button"
-                        onClick={() => runSearch(food.name)}
+                        onClick={() => runSearch(food.name, dayStage, { scrollToResult: true })}
                       >
                         {food.name}
                       </button>
@@ -760,11 +798,12 @@ export default function HomePage() {
 
         <section className="guide-section">
           <h2 className="guide-heading">FAQ / 가이드</h2>
-          <div className="guide-copy">
-            <p>대장내시경 전에는 음식에 따라 먹어도 되는 시기가 다를 수 있습니다.</p>
-            <p>김치찌개, 라면, 샐러드 같은 음식도 단계에 따라 섭취 여부가 달라질 수 있습니다.</p>
-          </div>
           <div className="guide-list">
+            <section className="guide-item guide-item-intro">
+              <h3>먼저 이렇게 이해하면 쉬워요</h3>
+              <p>대장내시경 전에는 음식에 따라 먹어도 되는 시기가 다를 수 있습니다.</p>
+              <p>김치찌개, 라면, 샐러드 같은 음식도 단계에 따라 섭취 여부가 달라질 수 있습니다.</p>
+            </section>
             {faqItems.map((item) => (
               <section key={item.question} className="guide-item">
                 <h3>{item.question}</h3>
@@ -845,26 +884,39 @@ export default function HomePage() {
         }
 
         .share-button {
-          width: 28px;
-          height: 28px;
-          border: none;
-          background: transparent;
-          color: #94a3b8;
+          min-height: 40px;
+          border: 1px solid #bfd0f6;
+          background: #eff4ff;
+          color: #1d4ed8;
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          gap: 8px;
           cursor: pointer;
-          padding: 0;
-          transition: color 0.15s ease, opacity 0.15s ease;
+          padding: 0 14px;
+          border-radius: 999px;
+          font-weight: 700;
+          font-size: 14px;
+          box-shadow: 0 10px 24px rgba(47, 111, 237, 0.12);
+          transition:
+            color 0.15s ease,
+            opacity 0.15s ease,
+            transform 0.15s ease,
+            box-shadow 0.15s ease,
+            border-color 0.15s ease;
           -webkit-tap-highlight-color: transparent;
         }
 
         .share-button:hover {
-          color: var(--primary);
+          color: #1e40af;
+          border-color: #8eb0f3;
+          box-shadow: 0 12px 28px rgba(47, 111, 237, 0.18);
+          transform: translateY(-1px);
         }
 
         .share-button:active {
           opacity: 0.65;
+          transform: translateY(0);
         }
 
         .share-icon {
@@ -872,17 +924,22 @@ export default function HomePage() {
           height: 16px;
         }
 
+        .share-label {
+          line-height: 1;
+        }
+
         .share-feedback {
           margin: 0;
-          font-size: 12px;
+          font-size: 13px;
           line-height: 1.5;
-          color: var(--muted);
+          color: #1f2937;
           text-align: right;
           white-space: nowrap;
-          background: rgba(255, 255, 255, 0.96);
-          padding: 4px 8px;
+          background: rgba(255, 255, 255, 0.98);
+          padding: 6px 10px;
           border-radius: 999px;
-          border: 1px solid #e5e7eb;
+          border: 1px solid #dbe3f5;
+          box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
         }
 
         .hero-grid {
@@ -1334,26 +1391,17 @@ export default function HomePage() {
           margin-top: 12px;
         }
 
-        .guide-copy {
-          margin-top: 12px;
-          display: grid;
-          gap: 6px;
-          max-width: 560px;
-        }
-
-        .guide-copy p {
-          margin: 0;
-          color: var(--muted);
-          line-height: 1.7;
-          font-size: 15px;
-        }
-
         .guide-item {
           border: 1px solid var(--line);
           background: #ffffff;
           border-radius: 12px;
-          padding: 14px 16px;
+          padding: 16px;
           color: var(--text);
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+        }
+
+        .guide-item-intro {
+          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
         }
 
         .guide-item h3 {
@@ -1409,8 +1457,8 @@ export default function HomePage() {
           }
 
           .share-button {
-            width: 32px;
-            height: 32px;
+            min-height: 38px;
+            padding: 0 12px;
           }
 
           .hero-copy,
