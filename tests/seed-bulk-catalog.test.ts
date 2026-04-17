@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { foodAliases, foods, sources } from "../prisma/seed";
+import { foodAliases, foodSources, foods, sources } from "../prisma/seed";
 
 test("bulk seed keeps at least 2000 foods", () => {
   assert.ok(
@@ -64,5 +64,31 @@ test("bulk expansion creates common variant aliases", () => {
     "자장면",
   ]) {
     assert.ok(aliasSet.has(expected), `missing variant alias: ${expected}`);
+  }
+});
+
+test("direct hospital foods keep source coverage", () => {
+  const foodIdByName = new Map(foods.map((food) => [food.name, food.id]));
+
+  for (const [foodName, minimumSources] of [
+    ["깨죽", 1],
+    ["들기름", 1],
+    ["김치류", 3],
+    ["해조류", 3],
+    ["버섯류", 3],
+    ["미나리", 2],
+    ["계란류", 3],
+    ["두부류", 3],
+    ["국물류", 2],
+    ["맑은음료류", 2],
+  ] as const) {
+    const foodId = foodIdByName.get(foodName);
+    assert.ok(foodId, `missing food for source coverage check: ${foodName}`);
+
+    const linkedSources = foodSources.filter((link) => link.foodId === foodId);
+    assert.ok(
+      linkedSources.length >= minimumSources,
+      `expected ${foodName} to have at least ${minimumSources} foodSources but got ${linkedSources.length}`,
+    );
   }
 });

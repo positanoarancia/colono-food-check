@@ -740,11 +740,13 @@ export const foodSources: {
   ...makeFoodSources(
     [
       "깨죽",
+      "들기름",
       "고구마",
       "김치류",
       "고기류",
       "해조류",
       "콩",
+      "콩류",
       "버섯류",
       "미나리",
       "고추씨",
@@ -769,6 +771,12 @@ export const foodSources: {
   ),
   ...makeFoodSources(
     [
+      "김치류",
+      "해조류",
+      "버섯류",
+      "미나리",
+      "고추씨",
+      "옥수수",
       "흰쌀밥",
       "흰죽",
       "계란류",
@@ -783,6 +791,17 @@ export const foodSources: {
     ],
     ["source_eulji"],
     "노원을지대학교병원 안내문 직접 언급 허용 음식",
+    true,
+  ),
+  ...makeFoodSources(
+    [
+      "김치류",
+      "해조류",
+      "버섯류",
+      "미나리",
+    ],
+    ["source_amc"],
+    "서울아산병원 안내문에서 직접 제한하는 음식군",
     true,
   ),
   ...makeFoodSources(
@@ -802,6 +821,8 @@ export const foodSources: {
       "김치류",
       "해조류",
       "버섯류",
+      "국물류",
+      "맑은음료류",
     ],
     ["source_ssmc"],
     "삼성서울병원 대장내시경 안내문 직접 언급 음식 또는 음식군",
