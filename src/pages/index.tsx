@@ -818,18 +818,23 @@ export default function HomePage() {
       <style jsx>{`
         :global(body) {
           margin: 0;
-          background: #f7f8fa;
+          background: #f3f7f7;
         }
 
         .page {
-          --primary: #2f6fed;
-          --bg: #f7f8fa;
+          --primary: #3569e8;
+          --primary-strong: #1d4ed8;
+          --primary-soft: #eef4ff;
+          --bg: #f3f7f7;
           --surface: #ffffff;
-          --surface-soft: #f9fafb;
-          --line: #e5e7eb;
-          --line-strong: #d1d5db;
+          --surface-soft: #f7fbfa;
+          --surface-sage: #edf5f1;
+          --line: #dfe7e5;
+          --line-strong: #c9d8d4;
           --text: #1f2937;
-          --muted: #6b7280;
+          --muted: #667085;
+          --sage: #5c8476;
+          --sage-strong: #41685b;
           min-height: 100vh;
           padding: 28px 16px 72px;
           background: var(--bg);
@@ -857,7 +862,7 @@ export default function HomePage() {
         .hero-card {
           position: relative;
           background: transparent;
-          padding: 8px 0 20px;
+          padding: 8px 0 24px;
         }
 
         .hero-top {
@@ -865,18 +870,34 @@ export default function HomePage() {
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          min-height: 40px;
+          min-height: 48px;
+          padding: 8px 10px;
+          border-radius: 18px;
+          border: 1px solid #dce8e4;
+          background:
+            linear-gradient(135deg, rgba(237, 245, 241, 0.92) 0%, rgba(244, 248, 255, 0.9) 100%);
         }
 
         .eyebrow {
           display: flex;
           align-items: center;
-          color: #4d7e74;
+          gap: 8px;
+          color: var(--sage-strong);
           font-size: 14px;
           font-weight: 800;
           letter-spacing: 0.02em;
           line-height: 1.2;
           flex: 1 1 auto;
+        }
+
+        .eyebrow::before {
+          content: "";
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, #79b39d 0%, #5c8476 100%);
+          box-shadow: 0 0 0 4px rgba(121, 179, 157, 0.14);
+          flex: 0 0 auto;
         }
 
         .share-box {
@@ -888,9 +909,9 @@ export default function HomePage() {
 
         .share-button {
           min-height: 36px;
-          border: 1px solid #c7d5f6;
-          background: #f5f8ff;
-          color: #1d4ed8;
+          border: 1px solid #cfdcf8;
+          background: rgba(255, 255, 255, 0.9);
+          color: var(--primary-strong);
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -912,8 +933,8 @@ export default function HomePage() {
 
         .share-button:hover {
           color: #1e40af;
-          border-color: #8eb0f3;
-          box-shadow: 0 8px 18px rgba(47, 111, 237, 0.12);
+          border-color: #9bb6f3;
+          box-shadow: 0 8px 18px rgba(53, 105, 232, 0.12);
           transform: translateY(-1px);
         }
 
@@ -949,7 +970,7 @@ export default function HomePage() {
           background: rgba(255, 255, 255, 0.98);
           padding: 6px 10px;
           border-radius: 999px;
-          border: 1px solid #dbe3f5;
+          border: 1px solid #d9e3ef;
           box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
         }
 
@@ -958,32 +979,37 @@ export default function HomePage() {
         }
 
         .hero-copy-block {
-          margin-top: 12px;
-          max-width: 560px;
+          margin-top: 18px;
+          max-width: 100%;
         }
 
         .hero-title {
           margin: 0;
-          font-size: clamp(30px, 4.4vw, 38px);
-          line-height: 1.08;
+          font-size: clamp(34px, 5vw, 40px);
+          line-height: 1.06;
           letter-spacing: -0.04em;
           font-weight: 800;
-          max-width: 560px;
+          max-width: 620px;
         }
 
         .hero-copy {
           margin: 10px 0 0;
           color: var(--muted);
-          font-size: 14px;
+          font-size: 15px;
           line-height: 1.6;
-          max-width: 560px;
+          max-width: 620px;
         }
 
         .search-panel {
           display: grid;
           gap: 12px;
-          margin-top: 20px;
-          padding-top: 8px;
+          margin-top: 22px;
+          padding: 16px;
+          border-radius: 20px;
+          border: 1px solid #dce7e4;
+          background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 251, 250, 0.98) 100%);
+          box-shadow: 0 16px 34px rgba(76, 99, 94, 0.06);
         }
 
         .stage-row {
@@ -1047,7 +1073,7 @@ export default function HomePage() {
 
         .search-input {
           height: 56px;
-          border-radius: 12px;
+          border-radius: 14px;
           border: 1px solid var(--line-strong);
           padding: 0 18px;
           font-size: 16px;
@@ -1060,13 +1086,13 @@ export default function HomePage() {
 
         .search-input:focus {
           border-color: var(--primary);
-          box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.1);
+          box-shadow: 0 0 0 3px rgba(53, 105, 232, 0.12);
         }
 
         .search-button {
           border: none;
-          border-radius: 12px;
-          background: var(--primary);
+          border-radius: 14px;
+          background: linear-gradient(180deg, #4277f2 0%, var(--primary) 100%);
           color: #ffffff;
           display: inline-flex;
           align-items: center;
@@ -1116,8 +1142,8 @@ export default function HomePage() {
 
         .quick-chip {
           border-radius: 999px;
-          border: 1px solid var(--line);
-          background: var(--surface);
+          border: 1px solid #d8e5e1;
+          background: linear-gradient(180deg, #ffffff 0%, var(--surface-sage) 100%);
           padding: 10px 14px;
           color: var(--text);
           cursor: pointer;
@@ -1256,7 +1282,7 @@ export default function HomePage() {
 
         .details-box summary:hover {
           color: var(--primary);
-          background: rgba(47, 111, 237, 0.04);
+          background: rgba(53, 105, 232, 0.04);
         }
 
         .details-box summary:active {
@@ -1329,7 +1355,7 @@ export default function HomePage() {
           font-size: 12px;
           font-weight: 700;
           color: #4b5563;
-          border: 1px solid #d8dde6;
+          border: 1px solid #d8e3df;
         }
 
         .panel-card {
@@ -1371,8 +1397,8 @@ export default function HomePage() {
           text-align: left;
           padding: 12px 14px;
           border-radius: 12px;
-          border: 1px solid var(--line);
-          background: #ffffff;
+          border: 1px solid #d7e3df;
+          background: linear-gradient(180deg, #ffffff 0%, var(--surface-sage) 100%);
         }
 
         .choice-button {
@@ -1385,8 +1411,8 @@ export default function HomePage() {
 
         .choice-button:hover {
           transform: none;
-          border-color: #c7d2fe;
-          background: #f8fbff;
+          border-color: #c0d4fb;
+          background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
         }
 
         .guide-heading {
@@ -1403,16 +1429,16 @@ export default function HomePage() {
         }
 
         .guide-item {
-          border: 1px solid var(--line);
-          background: #ffffff;
-          border-radius: 12px;
-          padding: 16px;
+          border: 1px solid #dce7e4;
+          background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
+          border-radius: 16px;
+          padding: 18px;
           color: var(--text);
-          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+          box-shadow: 0 12px 28px rgba(76, 99, 94, 0.06);
         }
 
         .guide-item-intro {
-          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+          background: linear-gradient(180deg, #ffffff 0%, #eff7f3 58%, #f4f8ff 100%);
         }
 
         .guide-item h3 {
@@ -1460,11 +1486,14 @@ export default function HomePage() {
           }
 
           .hero-title {
-            font-size: 30px;
+            font-size: 34px;
+            line-height: 1.08;
           }
 
           .hero-top {
-            align-items: flex-start;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
           }
 
           .share-button {
@@ -1536,6 +1565,11 @@ export default function HomePage() {
 
           .quick-chip {
             min-height: 42px;
+          }
+
+          .search-panel {
+            padding: 14px;
+            border-radius: 18px;
           }
         }
 
