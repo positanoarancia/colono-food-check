@@ -342,7 +342,7 @@ export default function HomePage() {
   const prewarmFinishedRef = useRef(false);
   const firstSearchLoggedRef = useRef(false);
   const shareFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resultSectionRef = useRef<HTMLElement | null>(null);
+  const stageRowRef = useRef<HTMLDivElement | null>(null);
   const pendingResultScrollRef = useRef(false);
 
   function setShareFeedbackWithTimeout(message: string) {
@@ -374,11 +374,11 @@ export default function HomePage() {
     pendingResultScrollRef.current = false;
 
     window.requestAnimationFrame(() => {
-      if (!resultSectionRef.current) {
+      if (!stageRowRef.current) {
         return;
       }
 
-      const top = resultSectionRef.current.getBoundingClientRect().top + window.scrollY - 16;
+      const top = stageRowRef.current.getBoundingClientRect().top + window.scrollY - 14;
       window.scrollTo({
         top: Math.max(top, 0),
         behavior: "smooth",
@@ -631,7 +631,7 @@ export default function HomePage() {
           </div>
 
           <form onSubmit={handleSubmit} className="search-panel">
-            <div className="stage-row">
+            <div className="stage-row" ref={stageRowRef}>
               {stageOptions.map((option) => (
                 <button
                   key={option.value}
@@ -689,7 +689,7 @@ export default function HomePage() {
         </section>
 
         {result && status ? (
-          <section className="result-stack" ref={resultSectionRef}>
+          <section className="result-stack">
             <article className="result-hero" style={{ background: status.bg, color: status.color }}>
               <div className="result-main is-single">
                 <div className="decision-block">
@@ -860,44 +860,47 @@ export default function HomePage() {
         }
 
         .hero-top {
-          position: relative;
-          min-height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          min-height: 40px;
         }
 
         .eyebrow {
-          display: inline-flex;
+          display: flex;
           align-items: center;
           gap: 6px;
           color: #4d7e74;
-          font-size: 12px;
-          font-weight: 700;
+          font-size: 14px;
+          font-weight: 800;
           letter-spacing: 0.02em;
+          line-height: 1.2;
+          flex: 1 1 auto;
         }
 
         .share-box {
-          position: absolute;
-          top: -4px;
-          right: 0;
           display: grid;
           justify-items: end;
           gap: 6px;
+          flex: 0 0 auto;
         }
 
         .share-button {
-          min-height: 40px;
-          border: 1px solid #bfd0f6;
-          background: #eff4ff;
+          min-height: 36px;
+          border: 1px solid #c7d5f6;
+          background: #f5f8ff;
           color: #1d4ed8;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
           cursor: pointer;
-          padding: 0 14px;
+          padding: 0 12px;
           border-radius: 999px;
           font-weight: 700;
-          font-size: 14px;
-          box-shadow: 0 10px 24px rgba(47, 111, 237, 0.12);
+          font-size: 13px;
+          box-shadow: none;
           transition:
             color 0.15s ease,
             opacity 0.15s ease,
@@ -910,7 +913,7 @@ export default function HomePage() {
         .share-button:hover {
           color: #1e40af;
           border-color: #8eb0f3;
-          box-shadow: 0 12px 28px rgba(47, 111, 237, 0.18);
+          box-shadow: 0 8px 18px rgba(47, 111, 237, 0.12);
           transform: translateY(-1px);
         }
 
@@ -947,8 +950,8 @@ export default function HomePage() {
         }
 
         .hero-copy-block {
-          margin-top: 10px;
-          max-width: 480px;
+          margin-top: 12px;
+          max-width: 560px;
         }
 
         .hero-title {
@@ -957,7 +960,7 @@ export default function HomePage() {
           line-height: 1.08;
           letter-spacing: -0.04em;
           font-weight: 800;
-          max-width: 480px;
+          max-width: 560px;
         }
 
         .hero-copy {
@@ -965,7 +968,7 @@ export default function HomePage() {
           color: var(--muted);
           font-size: 14px;
           line-height: 1.6;
-          max-width: 480px;
+          max-width: 560px;
         }
 
         .search-panel {
@@ -1452,13 +1455,18 @@ export default function HomePage() {
             font-size: 30px;
           }
 
-          .share-box {
-            top: -2px;
+          .hero-top {
+            align-items: flex-start;
           }
 
           .share-button {
-            min-height: 38px;
-            padding: 0 12px;
+            min-height: 34px;
+            padding: 0 10px;
+            font-size: 12px;
+          }
+
+          .eyebrow {
+            font-size: 13px;
           }
 
           .hero-copy,
