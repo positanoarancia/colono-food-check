@@ -94,6 +94,12 @@ const autoAliases = (name: string) => {
   if (name.includes("자장")) aliases.add(name.replaceAll("자장", "짜장"));
   if (name.includes("짜장")) aliases.add(name.replaceAll("짜장", "자장"));
   if (name.includes("샐러드")) aliases.add(name.replaceAll("샐러드", "셀러드"));
+  if (name.includes("까르보나라")) aliases.add(name.replaceAll("까르보나라", "카르보나라"));
+  if (name.includes("카르보나라")) aliases.add(name.replaceAll("카르보나라", "까르보나라"));
+  if (name.includes("리조또")) aliases.add(name.replaceAll("리조또", "리조토"));
+  if (name.includes("리조토")) aliases.add(name.replaceAll("리조토", "리조또"));
+  if (name.includes("샤브샤브")) aliases.add(name.replaceAll("샤브샤브", "샤브 샤브"));
+  if (name.includes("샤브 샤브")) aliases.add(name.replaceAll("샤브 샤브", "샤브샤브"));
 
   const spacingAlias = spaceVariant(name);
   if (spacingAlias) aliases.add(spacingAlias);
