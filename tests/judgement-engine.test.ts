@@ -115,6 +115,22 @@ const representativeCases = [
   { food: "사과주스", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
 ];
 
+const hospitalDirectCases = [
+  { food: "들기름", tags: ["processed"], d5: "caution", d3: "caution", d1: "avoid" },
+  { food: "버섯류", tags: ["high", "vegetable"], d5: "avoid", d3: "avoid", d1: "avoid" },
+  { food: "콩류", tags: ["high"], d5: "avoid", d3: "avoid", d1: "avoid" },
+  { food: "김치류", tags: ["spicy", "vegetable", "chunky"], d5: "avoid", d3: "avoid", d1: "avoid" },
+  { food: "해조류", tags: ["seaweed", "high"], d5: "avoid", d3: "avoid", d1: "avoid" },
+  { food: "고추씨", tags: ["seeded", "high"], d5: "avoid", d3: "avoid", d1: "avoid" },
+  { food: "빵종류", tags: ["low"], d5: "allowed", d3: "allowed", d1: "caution" },
+  { food: "계란류", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
+  { food: "두부류", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
+  { food: "국물류", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
+  { food: "맑은음료류", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
+  { food: "건더기없는국물", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
+  { food: "사과배바나나", tags: ["soft"], d5: "allowed", d3: "allowed", d1: "caution" },
+];
+
 function tagsToCandidates(tags: string[]) {
   return tags.map((tagId) => ({
     tagId,
@@ -185,6 +201,25 @@ test("food_group match keeps confidence B when rules exist", () => {
 
 for (const sample of representativeCases) {
   test(`representative case: ${sample.food}`, () => {
+    const tags = tagsToCandidates(sample.tags);
+
+    assert.equal(
+      resolveJudgement({ matchedType: "exact_food", tags, rules: d5Rules }).status,
+      sample.d5,
+    );
+    assert.equal(
+      resolveJudgement({ matchedType: "exact_food", tags, rules: d3Rules }).status,
+      sample.d3,
+    );
+    assert.equal(
+      resolveJudgement({ matchedType: "exact_food", tags, rules: d1Rules }).status,
+      sample.d1,
+    );
+  });
+}
+
+for (const sample of hospitalDirectCases) {
+  test(`hospital direct case: ${sample.food}`, () => {
     const tags = tagsToCandidates(sample.tags);
 
     assert.equal(
