@@ -620,7 +620,8 @@ export default function HomePage() {
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="share-label">공유하기</span>
+                <span className="share-label share-label-mobile">공유</span>
+                <span className="share-label share-label-desktop">공유하기</span>
               </button>
               {shareFeedback ? <p className="share-feedback">{shareFeedback}</p> : null}
             </div>
@@ -870,13 +871,19 @@ export default function HomePage() {
         .eyebrow {
           display: flex;
           align-items: center;
-          gap: 6px;
+          justify-content: center;
           color: #4d7e74;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.02em;
           line-height: 1.2;
           flex: 1 1 auto;
+          width: fit-content;
+          min-height: 36px;
+          padding: 0 12px;
+          border-radius: 999px;
+          border: 1px solid #cfe2dd;
+          background: #f4fbf8;
         }
 
         .share-box {
@@ -929,6 +936,14 @@ export default function HomePage() {
 
         .share-label {
           line-height: 1;
+        }
+
+        .share-label-mobile {
+          display: none;
+        }
+
+        .share-label-desktop {
+          display: inline;
         }
 
         .share-feedback {
@@ -1461,12 +1476,22 @@ export default function HomePage() {
 
           .share-button {
             min-height: 34px;
-            padding: 0 10px;
+            padding: 0 11px;
             font-size: 12px;
           }
 
           .eyebrow {
-            font-size: 13px;
+            min-height: 34px;
+            padding: 0 10px;
+            font-size: 12px;
+          }
+
+          .share-label-mobile {
+            display: inline;
+          }
+
+          .share-label-desktop {
+            display: none;
           }
 
           .hero-copy,
