@@ -50,37 +50,43 @@ async function main() {
     });
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.ruleSource.deleteMany();
-    await tx.foodGroupSource.deleteMany();
-    await tx.foodSource.deleteMany();
-    await tx.recommendedMenuFood.deleteMany();
-    await tx.recommendedMenu.deleteMany();
-    await tx.foodSimilarity.deleteMany();
-    await tx.judgementRule.deleteMany();
-    await tx.foodTagMap.deleteMany();
-    await tx.foodAlias.deleteMany();
-    await tx.food.deleteMany();
-    await tx.foodGroupTag.deleteMany();
-    await tx.source.deleteMany();
-    await tx.foodTag.deleteMany();
-    await tx.foodGroup.deleteMany();
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.ruleSource.deleteMany();
+      await tx.foodGroupSource.deleteMany();
+      await tx.foodSource.deleteMany();
+      await tx.recommendedMenuFood.deleteMany();
+      await tx.recommendedMenu.deleteMany();
+      await tx.foodSimilarity.deleteMany();
+      await tx.judgementRule.deleteMany();
+      await tx.foodTagMap.deleteMany();
+      await tx.foodAlias.deleteMany();
+      await tx.food.deleteMany();
+      await tx.foodGroupTag.deleteMany();
+      await tx.source.deleteMany();
+      await tx.foodTag.deleteMany();
+      await tx.foodGroup.deleteMany();
 
-    await tx.foodGroup.createMany({ data: foodGroups });
-    await tx.foodTag.createMany({ data: foodTags });
-    await tx.foodGroupTag.createMany({ data: foodGroupTags });
-    await tx.food.createMany({ data: foods });
-    await tx.foodAlias.createMany({ data: foodAliases });
-    await tx.foodTagMap.createMany({ data: foodTagMaps });
-    await tx.judgementRule.createMany({ data: judgementRules });
-    await tx.foodSimilarity.createMany({ data: foodSimilarities });
-    await tx.recommendedMenu.createMany({ data: recommendedMenus });
-    await tx.recommendedMenuFood.createMany({ data: recommendedMenuFoods });
-    await tx.source.createMany({ data: sources });
-    await tx.foodSource.createMany({ data: foodSources });
-    await tx.foodGroupSource.createMany({ data: foodGroupSources });
-    await tx.ruleSource.createMany({ data: ruleSources });
-  });
+      await tx.foodGroup.createMany({ data: foodGroups });
+      await tx.foodTag.createMany({ data: foodTags });
+      await tx.foodGroupTag.createMany({ data: foodGroupTags });
+      await tx.food.createMany({ data: foods });
+      await tx.foodAlias.createMany({ data: foodAliases });
+      await tx.foodTagMap.createMany({ data: foodTagMaps });
+      await tx.judgementRule.createMany({ data: judgementRules });
+      await tx.foodSimilarity.createMany({ data: foodSimilarities });
+      await tx.recommendedMenu.createMany({ data: recommendedMenus });
+      await tx.recommendedMenuFood.createMany({ data: recommendedMenuFoods });
+      await tx.source.createMany({ data: sources });
+      await tx.foodSource.createMany({ data: foodSources });
+      await tx.foodGroupSource.createMany({ data: foodGroupSources });
+      await tx.ruleSource.createMany({ data: ruleSources });
+    },
+    {
+      maxWait: 10_000,
+      timeout: 120_000,
+    },
+  );
 
   console.log("Static sync completed");
   console.log(`dayStages: ${dayStages.length}`);

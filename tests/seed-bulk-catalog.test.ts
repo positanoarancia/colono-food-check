@@ -3,10 +3,10 @@ import test from "node:test";
 
 import { foodAliases, foods, sources } from "../prisma/seed";
 
-test("bulk seed keeps at least 300 foods", () => {
+test("bulk seed keeps at least 2000 foods", () => {
   assert.ok(
-    foods.length >= 300,
-    `expected at least 300 foods but got ${foods.length}`,
+    foods.length >= 2000,
+    `expected at least 2000 foods but got ${foods.length}`,
   );
 });
 
@@ -21,6 +21,10 @@ test("bulk seed includes high-priority real-world foods", () => {
     "돈까스",
     "설렁탕",
     "카레라이스",
+    "깨죽",
+    "들기름",
+    "미나리",
+    "버섯류",
   ]) {
     assert.ok(names.has(expected), `missing representative food: ${expected}`);
   }

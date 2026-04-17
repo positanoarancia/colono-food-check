@@ -5,6 +5,11 @@ import {
   additionalFoodGroupTags,
   bulkFoodCatalogs,
 } from "./bulk-catalog";
+import {
+  massBulkFoodCatalogs,
+  massFoodGroups,
+  massFoodGroupTags,
+} from "./hospital-mass-expansion";
 
 const prisma = new PrismaClient();
 
@@ -84,6 +89,7 @@ export const foodGroups = [
   { id: "group_unknown_spicy", slug: "unknown-spicy-food", name: "미등록매운음식", description: "미등록 매운 음식 임시 분류용", sortOrder: 91 },
   { id: "group_unknown_processed", slug: "unknown-processed-food", name: "미등록가공식품", description: "미등록 가공식품 임시 분류용", sortOrder: 92 },
   ...additionalFoodGroups,
+  ...massFoodGroups,
 ].map((group) => ({
   ...group,
   isFallbackGroup: group.id.startsWith("group_unknown_"),
@@ -158,6 +164,7 @@ export const foodGroupTags = [
   ["group_fastfood", "tag_fried"],
   ["group_fastfood", "tag_chunky"],
   ...additionalFoodGroupTags,
+  ...massFoodGroupTags,
 ].map(([foodGroupId, foodTagId]) => ({ foodGroupId, foodTagId, note: null }));
 
 const makeFood = (
@@ -198,37 +205,10 @@ const generatedTagNotes: Record<string, string> = {
   tag_red_purple: "색이 진해 검사 전 보수적으로 보는 편이 낫다",
 };
 
-const bulkCatalogFoods = bulkFoodCatalogs.flatMap((catalog) =>
-  catalog.items.map((entry, index) =>
-    makeFood(
-      `food_${catalog.prefix}_${index + 1}`,
-      `${catalog.prefix}-${index + 1}`,
-      entry.name,
-      catalog.groupId,
-      entry.description,
-    ),
-  ),
-);
-
-const bulkCatalogAliases = bulkFoodCatalogs.flatMap((catalog) =>
-  catalog.items.flatMap((entry, index) =>
-    (entry.aliases ?? []).map((alias) => ({
-      foodId: `food_${catalog.prefix}_${index + 1}`,
-      alias,
-      normalizedAlias: normalize(alias),
-    })),
-  ),
-);
-
-const bulkCatalogFoodTagMaps = bulkFoodCatalogs.flatMap((catalog) =>
-  catalog.items.flatMap((entry, index) =>
-    (entry.tags ?? []).map((foodTagId) => ({
-      foodId: `food_${catalog.prefix}_${index + 1}`,
-      foodTagId,
-      note: generatedTagNotes[foodTagId] ?? "병원 안내문 공통 기준을 바탕으로 보조 분류한 태그",
-    })),
-  ),
-);
+const allBulkCatalogs = [...bulkFoodCatalogs, ...massBulkFoodCatalogs];
+const bulkCatalogFoods: ReturnType<typeof makeFood>[] = [];
+const bulkCatalogAliases: { foodId: string; alias: string; normalizedAlias: string }[] = [];
+const bulkCatalogFoodTagMaps: { foodId: string; foodTagId: string; note: string }[] = [];
 
 const coreFoods = [
   makeFood("food_white_porridge", "white-porridge", "흰죽", "group_white_porridge", "대표 허용 죽", true),
@@ -307,6 +287,58 @@ const coreFoods = [
   makeFood("food_chicken_breast", "chicken-breast", "닭가슴살", "group_soft_protein"),
   makeFood("food_plain_dumpling_soup", "plain-dumpling-soup", "만둣국", "group_stew"),
 ];
+
+const bulkFoodIdByNormalizedName = new Map<string, string>(
+  coreFoods.map((food) => [food.normalizedName, food.id]),
+);
+const bulkAliasSeen = new Set<string>();
+const bulkFoodTagSeen = new Set<string>();
+
+for (const catalog of allBulkCatalogs) {
+  catalog.items.forEach((entry, index) => {
+    const normalizedName = normalize(entry.name);
+    let foodId = bulkFoodIdByNormalizedName.get(normalizedName);
+
+    if (!foodId) {
+      foodId = `food_${catalog.prefix}_${index + 1}`;
+      bulkFoodIdByNormalizedName.set(normalizedName, foodId);
+      bulkCatalogFoods.push(
+        makeFood(
+          foodId,
+          `${catalog.prefix}-${index + 1}`,
+          entry.name,
+          catalog.groupId,
+          entry.description,
+        ),
+      );
+    }
+
+    for (const alias of entry.aliases ?? []) {
+      const normalizedAlias = normalize(alias);
+      if (!normalizedAlias || normalizedAlias === normalizedName || bulkAliasSeen.has(normalizedAlias)) {
+        continue;
+      }
+
+      bulkAliasSeen.add(normalizedAlias);
+      bulkCatalogAliases.push({ foodId, alias, normalizedAlias });
+    }
+
+    for (const foodTagId of entry.tags ?? []) {
+      const mapKey = `${foodId}:${foodTagId}`;
+      if (bulkFoodTagSeen.has(mapKey)) {
+        continue;
+      }
+
+      bulkFoodTagSeen.add(mapKey);
+      bulkCatalogFoodTagMaps.push({
+        foodId,
+        foodTagId,
+        note:
+          generatedTagNotes[foodTagId] ?? "병원 안내문 공통 기준을 바탕으로 보조 분류한 태그",
+      });
+    }
+  });
+}
 
 export const foods = [...coreFoods, ...bulkCatalogFoods];
 
@@ -394,7 +426,12 @@ const coreFoodAliases = [
   normalizedAlias: normalize(alias),
 }));
 
-export const foodAliases = [...coreFoodAliases, ...bulkCatalogAliases];
+export const foodAliases = [...coreFoodAliases, ...bulkCatalogAliases].filter(
+  (alias, index, array) =>
+    array.findIndex(
+      (candidate) => candidate.normalizedAlias === alias.normalizedAlias,
+    ) === index,
+);
 
 const coreFoodTagMaps = [
   ["food_white_porridge", "tag_d1_soft_allowed", "전날에도 비교적 자주 허용되는 대표 죽류다"],
@@ -453,7 +490,13 @@ const coreFoodTagMaps = [
   ["food_plain_dumpling_soup", "tag_processed", "가공 만두류다"],
 ].map(([foodId, foodTagId, note]) => ({ foodId, foodTagId, note }));
 
-export const foodTagMaps = [...coreFoodTagMaps, ...bulkCatalogFoodTagMaps];
+export const foodTagMaps = [...coreFoodTagMaps, ...bulkCatalogFoodTagMaps].filter(
+  (map, index, array) =>
+    array.findIndex(
+      (candidate) =>
+        candidate.foodId === map.foodId && candidate.foodTagId === map.foodTagId,
+    ) === index,
+);
 
 const rule = (
   id: string,
