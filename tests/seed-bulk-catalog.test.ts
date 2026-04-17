@@ -96,6 +96,29 @@ test("direct hospital foods keep source coverage", () => {
   }
 });
 
+test("core allowed representative foods keep direct hospital coverage", () => {
+  const foodIdByName = new Map(foods.map((food) => [food.name, food.id]));
+
+  for (const [foodName, minimumSources] of [
+    ["흰죽", 3],
+    ["미음", 3],
+    ["식빵", 3],
+    ["계란찜", 3],
+    ["두부", 3],
+    ["맑은육수", 3],
+    ["사과주스", 2],
+  ] as const) {
+    const foodId = foodIdByName.get(foodName);
+    assert.ok(foodId, `missing food for allowed direct coverage check: ${foodName}`);
+
+    const linkedSources = foodSources.filter((link) => link.foodId === foodId);
+    assert.ok(
+      linkedSources.length >= minimumSources,
+      `expected ${foodName} to have at least ${minimumSources} foodSources but got ${linkedSources.length}`,
+    );
+  }
+});
+
 test("core restricted food groups keep hospital source coverage", () => {
   const groupIdBySlug = new Map(foodGroups.map((group) => [group.slug, group.id]));
 
@@ -108,6 +131,26 @@ test("core restricted food groups keep hospital source coverage", () => {
   ] as const) {
     const foodGroupId = groupIdBySlug.get(groupSlug);
     assert.ok(foodGroupId, `missing food group for coverage check: ${groupSlug}`);
+
+    const linkedSources = foodGroupSources.filter((link) => link.foodGroupId === foodGroupId);
+    assert.ok(
+      linkedSources.length >= minimumSources,
+      `expected ${groupSlug} to have at least ${minimumSources} foodGroupSources but got ${linkedSources.length}`,
+    );
+  }
+});
+
+test("core allowed food groups keep hospital source coverage", () => {
+  const groupIdBySlug = new Map(foodGroups.map((group) => [group.slug, group.id]));
+
+  for (const [groupSlug, minimumSources] of [
+    ["white-porridge", 3],
+    ["bread", 3],
+    ["soft-protein", 3],
+    ["clear-liquid", 3],
+  ] as const) {
+    const foodGroupId = groupIdBySlug.get(groupSlug);
+    assert.ok(foodGroupId, `missing allowed food group for coverage check: ${groupSlug}`);
 
     const linkedSources = foodGroupSources.filter((link) => link.foodGroupId === foodGroupId);
     assert.ok(

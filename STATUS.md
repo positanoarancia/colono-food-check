@@ -24,6 +24,8 @@
 * 위 core restricted group들이 최소 hospital source coverage를 유지하는지 smoke test를 추가해, 다음 seed 확장에서도 핵심 그룹 근거가 다시 얇아지지 않도록 보강
 * bulk alias 자동 생성 규칙에 `까르보나라/카르보나라`, `리조또/리조토` 같은 실제 표기 변형을 추가해 외식 음식 검색어 커버리지를 더 넓혔고, 관련 variant alias가 실제로 seed에 생성되는지 smoke test를 보강
 * bulk alias 자동 생성 규칙이 실제 생성되는 패턴과 smoke test 기대치를 다시 맞춰, 외식 표기 변형 보강 회차에서도 테스트가 안정적으로 유지되도록 정리
+* `미음`, `식빵`, `계란찜`, `두부`, `맑은육수`, `사과주스`처럼 허용군 대표 exact food도 공식 병원 안내문 direct source에 더 촘촘히 연결하고, 허용군 direct food/group source coverage가 다시 얇아지지 않도록 smoke test를 추가
+* 허용군 representative food도 병원 direct 케이스 회귀 테스트에 포함해 `white-porridge / bread / soft-protein / clear-liquid` 축의 날짜별 판정이 seed 확장 중 흔들리지 않게 보강
 * 서울성모병원, 세브란스, 삼성서울병원 등 공식 안내문에 직접 나온 `깨죽`, `들기름`, `미나리`, `버섯류`, `콩`, `김치류`, `고기류`, `해조류`, `고추씨`, `옥수수`, `계란류`, `두부류`, `국물류`, `맑은음료류` 등을 exact food로 직접 등록
 * `김치류`, `버섯류`, `콩류`, `잎채소류`, `씨있는채소과일류`, `기름조미류` 그룹을 추가하고, 병원 안내문이 가리키는 음식군을 실제 검색 가능한 구체 음식명으로 대량 확장
 * `파스타`, `짜장면`, `짬뽕`, `제육볶음`, `돈까스`, `설렁탕`, `카레라이스` 같은 실제 사용자 검색 가능성이 높은 음식들을 exact food로 직접 등록해 fallback 비중을 낮출 기반 확보

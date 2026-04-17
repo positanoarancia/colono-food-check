@@ -129,6 +129,12 @@ const hospitalDirectCases = [
   { food: "맑은음료류", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
   { food: "건더기없는국물", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
   { food: "사과배바나나", tags: ["soft"], d5: "allowed", d3: "allowed", d1: "caution" },
+  { food: "미음", tags: ["low", "soft", "d1SoftAllowed"], d5: "allowed", d3: "allowed", d1: "allowed" },
+  { food: "식빵", tags: ["low", "d1SoftAllowed"], d5: "allowed", d3: "allowed", d1: "allowed" },
+  { food: "계란찜", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
+  { food: "두부", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
+  { food: "맑은육수", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
+  { food: "사과주스", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
 ];
 
 function tagsToCandidates(tags: string[]) {
