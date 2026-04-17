@@ -600,7 +600,14 @@ export default function HomePage() {
       <div className="page-shell">
         <section className="hero-card">
           <div className="hero-top">
-            <div className="eyebrow">건강신호등</div>
+            <div className="eyebrow">
+              <span className="signal-dots" aria-hidden="true">
+                <span className="signal-dot signal-dot-red" />
+                <span className="signal-dot signal-dot-amber" />
+                <span className="signal-dot signal-dot-blue" />
+              </span>
+              <span>건강신호등</span>
+            </div>
             <div className="share-box">
               <button
                 type="button"
@@ -873,6 +880,7 @@ export default function HomePage() {
         .eyebrow {
           display: flex;
           align-items: center;
+          gap: 8px;
           color: var(--brand);
           font-size: 13px;
           font-weight: 800;
@@ -880,6 +888,32 @@ export default function HomePage() {
           line-height: 1.2;
           flex: 0 0 auto;
           padding: 0;
+        }
+
+        .signal-dots {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          flex: 0 0 auto;
+        }
+
+        .signal-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 999px;
+          box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.35);
+        }
+
+        .signal-dot-red {
+          background: #ef6b6b;
+        }
+
+        .signal-dot-amber {
+          background: #f2b84b;
+        }
+
+        .signal-dot-blue {
+          background: #5b7cf6;
         }
 
         .share-box {
@@ -1511,6 +1545,15 @@ export default function HomePage() {
           .eyebrow {
             font-size: 13px;
             padding: 0;
+          }
+
+          .signal-dots {
+            gap: 3px;
+          }
+
+          .signal-dot {
+            width: 5px;
+            height: 5px;
           }
 
           .share-label-mobile {
