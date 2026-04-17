@@ -230,6 +230,7 @@
 * [x] bulk 음식 `비슷한 음식` 추천 ranking을 보정하고 관련 회귀 테스트 추가
 * [x] core restricted food group hospital source coverage 보강 및 smoke test 추가
 * [x] bulk alias 자동 생성 규칙에 외식 표기 변형(카르보나라/리조토 등) 추가 및 smoke test 보강
+* [x] bulk alias smoke test 기대치를 실제 생성 패턴과 다시 정렬
 * [x] fallback 박스 제목을 판단 방법 중심 문구로 바꾸고 어려운 표현(`잔사`) 제거
 * [x] fallback 상세 토글을 날짜별 자가판단 가이드로 맞추고 문구 가독성을 위한 폰트/줄길이 보정
 * [x] fallback 결과 문구를 날짜별 자가판단형 안내로 나눠 기준이 없을 때도 다음 판단 기준을 바로 볼 수 있게 보정
