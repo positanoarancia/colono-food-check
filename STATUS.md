@@ -2,14 +2,19 @@
 
 ## 현재 상태
 
-* 단계: Phase 19~21 완료, prewarm/SEO 기본 적용 완료, 공유/FAQ/전날 허용식 UX 보정 완료, DB 보강 1차 진행
-* 진행률: MVP 100%, Launch Prep 93%
+* 단계: Phase 19~21 완료, prewarm/SEO 기본 적용 완료, 공유/FAQ/전날 허용식 UX 보정 완료, 결과 상세/FAQ 중복 축소와 감자 전날 허용식 보정 완료
+* 진행률: MVP 100%, Launch Prep 94%
 * 마지막 업데이트: 2026-04-18
 
 ---
 
 ## 최근 작업
 
+* FAQ 상단의 `먼저 이렇게 이해하면 쉬워요` 소개 블록도 기본 접힘으로 바꿔, 첫 FAQ만 펼쳐져 보이던 인상을 줄이고 결과 아래 세로 길이를 더 짧게 정리
+* `먹어도 괜찮아요` 결과에서는 `대신 이렇게 고르세요` 블록을 숨겨, 허용 판정에서 불필요하게 다시 조심시키는 느낌을 제거
+* `감자`, `으깬감자`에 전날 허용 대표식 태그를 명시적으로 부여하고 `전분채소류`의 과한 `건더기` 분류를 제거해, 전날(`d1`)에 `감자`가 `allowed`로 보이도록 판정을 보정
+* judgement engine에서 food-level `d1-soft-allowed`가 있을 때 food-level `low-fiber`/`soft-food` caution 규칙도 함께 눌리도록 수정해, 대표 허용식이 다른 약한 caution 규칙에 다시 끌려 내려가지 않게 정리
+* production DB에 최신 정적 데이터를 다시 sync하고, build cache를 건너뛴 강제 production 재배포까지 수행해 live `/api/check?query=감자&dayStage=d1` 응답이 실제로 `allowed`가 되는지 검증
 * 결과 상세를 `왜 이렇게 봤나요? / 대신 이렇게 고르세요 / 참고 근거` 2+1 구조로 줄이고, FAQ와 겹치던 일반 설명을 제거해 결과를 펼쳐도 같은 말을 여러 번 읽는 느낌을 완화
 * fallback 상단 안내 박스를 없애고, 상세에서도 `등록된 기준이 없어요` 같은 중복 문장을 빼고 자가판단 포인트만 남기도록 정리
 * FAQ를 공통 원칙 3문항 중심의 접힘 구조로 바꿔 결과-상세-FAQ가 세 번 반복되던 흐름을 줄임
@@ -190,9 +195,11 @@
 * test: 통과 (`npm test`)
 * build: 통과 (`npm run build`)
 * production verify:
-  * `https://colono-food-check.vercel.app` 홈 `200`
-  * `/api/health` -> `status: ok`, `database: connected`
-  * `포카리` -> alias / allowed
+* `https://colono-food-check.vercel.app` 홈 `200`
+* `/api/health` -> `status: ok`, `database: connected`
+* `감자` -> exact_food / allowed (`d1`)
+* `카스테라` -> exact_food / allowed (`d1`)
+* `포카리` -> alias / allowed
   * `도토리묵` -> alias / allowed (`d3`)
   * `모닝빵` -> alias / allowed
   * `흑미밥` -> exact_food / avoid

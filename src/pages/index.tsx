@@ -318,17 +318,7 @@ function getChoiceTips(result: CheckResponse) {
   }
 
   if (result.status === "allowed") {
-    if (result.dayStage.slug === "d1") {
-      return [
-        "전날에는 양을 많이 늘리기보다 가볍게 드세요",
-        "새로운 음식보다 이미 무난한 음식으로 유지하는 편이 좋아요",
-      ];
-    }
-
-    return [
-      "자극적이거나 건더기 많은 음식으로 다시 바꾸지 않는 편이 좋아요",
-      "비슷한 음식 중에서도 더 부드럽고 단순한 쪽이 잘 맞아요",
-    ];
+    return [];
   }
 
   if (result.status === "caution") {
@@ -845,14 +835,16 @@ export default function HomePage() {
                           <li>{getStageImportantPoint(result.dayStage.slug, result.matchedType)}</li>
                         </ul>
                       </div>
-                      <div className="detail-group">
-                        <strong>대신 이렇게 고르세요</strong>
-                        <ul className="detail-list">
-                          {detailChoiceTips.map((point) => (
-                            <li key={point}>{point}</li>
-                          ))}
-                        </ul>
-                      </div>
+                      {detailChoiceTips.length > 0 ? (
+                        <div className="detail-group">
+                          <strong>대신 이렇게 고르세요</strong>
+                          <ul className="detail-list">
+                            {detailChoiceTips.map((point) => (
+                              <li key={point}>{point}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
                       {detailReferences.length > 0 ? (
                         <div className="detail-group">
                           <strong>참고 근거</strong>
@@ -906,11 +898,16 @@ export default function HomePage() {
         <section className="guide-section">
           <h2 className="guide-heading">FAQ / 가이드</h2>
           <div className="guide-shell">
-            <section className="guide-item guide-item-intro">
-              <h3>먼저 이렇게 이해하면 쉬워요</h3>
+            <details className="guide-item guide-item-intro">
+              <summary className="guide-summary">
+                <span>먼저 이렇게 이해하면 쉬워요</span>
+                <span className="summary-chevron" aria-hidden="true">
+                  ▾
+                </span>
+              </summary>
               <p>검색 결과는 지금 시점의 빠른 판단용이에요.</p>
               <p>검사 일정과 장정결제 복용 방법은 병원 안내를 가장 먼저 따라주세요.</p>
-            </section>
+            </details>
             {faqItems.map((item) => (
               <details key={item.question} className="guide-item">
                 <summary className="guide-summary">

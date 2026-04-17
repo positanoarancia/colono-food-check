@@ -73,12 +73,12 @@ const confidenceByMatchedType: Record<SearchMatchedType, ConfidenceGrade> = {
   none: "C",
 };
 
-function shouldSuppressGroupRuleForFoodOverride(tag: CandidateTag, rule: StageRule, tags: CandidateTag[]) {
+function shouldSuppressRuleForFoodOverride(tag: CandidateTag, rule: StageRule, tags: CandidateTag[]) {
   const hasD1SoftAllowedFoodTag = tags.some(
     (candidate) => candidate.source === "food" && candidate.tagSlug === "d1-soft-allowed",
   );
 
-  if (!hasD1SoftAllowedFoodTag || tag.source !== "food_group") {
+  if (!hasD1SoftAllowedFoodTag) {
     return false;
   }
 
@@ -95,7 +95,7 @@ export function resolveJudgement(input: JudgementInput): JudgementResult {
         return null;
       }
 
-      if (shouldSuppressGroupRuleForFoodOverride(tag, rule, input.tags)) {
+      if (shouldSuppressRuleForFoodOverride(tag, rule, input.tags)) {
         return null;
       }
 

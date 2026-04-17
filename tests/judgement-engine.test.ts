@@ -73,7 +73,7 @@ const representativeCases = [
   { food: "삶은계란", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "두부", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "연두부", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
-  { food: "감자", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
+  { food: "감자", tags: ["low", "soft", "d1SoftAllowed"], d5: "allowed", d3: "allowed", d1: "allowed" },
   { food: "닭가슴살", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "묵", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "바나나", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
@@ -156,6 +156,20 @@ test("alias match keeps confidence B when rules exist", () => {
 
   assert.equal(result.status, "allowed");
   assert.equal(result.confidenceGrade, "B");
+});
+
+test("d1 soft allowed suppresses low-fiber and soft caution even for food-level tags", () => {
+  const result = resolveJudgement({
+    matchedType: "exact_food",
+    tags: [
+      { tagId: "low", tagSlug: "low-fiber", source: "food" },
+      { tagId: "soft", tagSlug: "soft-food", source: "food" },
+      { tagId: "d1SoftAllowed", tagSlug: "d1-soft-allowed", source: "food" },
+    ],
+    rules: d1Rules,
+  });
+
+  assert.equal(result.status, "allowed");
 });
 
 test("food_group match keeps confidence B when rules exist", () => {
