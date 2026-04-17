@@ -232,6 +232,7 @@ type FoodGroupIndexEntry = {
   slug: string;
   name: string;
   normalizedName: string;
+  normalizedMatchNames: string[];
 };
 
 const staticCache = {
@@ -347,21 +348,24 @@ async function getFoodGroupIndex(
   staticCache.foodGroupIndex = groups.map((group) => ({
     ...group,
     normalizedName: normalizeKoreanText(group.name),
+    normalizedMatchNames: getFoodGroupMatchNames(group.name),
   }));
 
   return staticCache.foodGroupIndex;
 }
 
-function matchFoodGroupIndex(
+function getFoodGroupMatchNames(groupName: string): string[] {
+  const normalizedName = normalizeKoreanText(groupName);
+  const trimmedName = normalizedName.replace(/(류|군)$/u, "");
+
+  return [...new Set([normalizedName, trimmedName].filter(Boolean))];
+}
+
+export function matchFoodGroupIndex(
   normalizedQuery: string,
   groups: FoodGroupIndexEntry[],
 ): FoodGroupIndexEntry | null {
-  return (
-    groups.find((group) => group.normalizedName === normalizedQuery) ??
-    groups.find((group) => group.normalizedName.includes(normalizedQuery)) ??
-    groups.find((group) => normalizedQuery.includes(group.normalizedName)) ??
-    null
-  );
+  return groups.find((group) => group.normalizedMatchNames.includes(normalizedQuery)) ?? null;
 }
 
 async function findFoodGroupDetail(foodGroupId: string) {
