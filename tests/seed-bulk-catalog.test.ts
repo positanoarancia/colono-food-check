@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { foodAliases, foodSources, foods, sources } from "../prisma/seed";
+import { foodAliases, foodGroupSources, foodGroups, foodSources, foods, sources } from "../prisma/seed";
 
 test("bulk seed keeps at least 2000 foods", () => {
   assert.ok(
@@ -89,6 +89,27 @@ test("direct hospital foods keep source coverage", () => {
     assert.ok(
       linkedSources.length >= minimumSources,
       `expected ${foodName} to have at least ${minimumSources} foodSources but got ${linkedSources.length}`,
+    );
+  }
+});
+
+test("core restricted food groups keep hospital source coverage", () => {
+  const groupIdBySlug = new Map(foodGroups.map((group) => [group.slug, group.id]));
+
+  for (const [groupSlug, minimumSources] of [
+    ["seeded-fruit", 3],
+    ["seaweed", 3],
+    ["whole-grain", 3],
+    ["namul", 3],
+    ["nuts", 2],
+  ] as const) {
+    const foodGroupId = groupIdBySlug.get(groupSlug);
+    assert.ok(foodGroupId, `missing food group for coverage check: ${groupSlug}`);
+
+    const linkedSources = foodGroupSources.filter((link) => link.foodGroupId === foodGroupId);
+    assert.ok(
+      linkedSources.length >= minimumSources,
+      `expected ${groupSlug} to have at least ${minimumSources} foodGroupSources but got ${linkedSources.length}`,
     );
   }
 });

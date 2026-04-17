@@ -854,6 +854,18 @@ export const foodGroupSources: {
     true,
   ),
   ...makeFoodGroupSources(
+    ["seeded-fruit", "seaweed", "whole-grain", "namul"],
+    ["source_cmc", "source_amc", "source_ssmc"],
+    "병원 안내문에서 직접 제한하는 핵심 음식군",
+    true,
+  ),
+  ...makeFoodGroupSources(
+    ["nuts"],
+    ["source_cmc", "source_amc"],
+    "병원 안내문에서 직접 제한하는 견과류 음식군",
+    true,
+  ),
+  ...makeFoodGroupSources(
     ["oily-seasoning", "broth-meal", "cutlet", "spicy-stirfry", "fried-rice"],
     ["source_gs"],
     "강남세브란스병원 안내문 일반 제한 기준과 연결되는 음식군",
