@@ -799,7 +799,7 @@ export default function HomePage() {
 
         <section className="guide-section">
           <h2 className="guide-heading">FAQ / 가이드</h2>
-          <div className="guide-list">
+          <div className="guide-shell">
             <section className="guide-item guide-item-intro">
               <h3>먼저 이렇게 이해하면 쉬워요</h3>
               <p>대장내시경 전에는 음식에 따라 먹어도 되는 시기가 다를 수 있습니다.</p>
@@ -818,28 +818,26 @@ export default function HomePage() {
       <style jsx>{`
         :global(body) {
           margin: 0;
-          background: #eef4f3;
+          background: #f5f7fa;
         }
 
         .page {
           --primary: #3569e8;
           --primary-strong: #1d4ed8;
           --primary-soft: #eef4ff;
-          --bg: #eef4f3;
+          --bg: #f5f7fa;
           --surface: #ffffff;
-          --surface-soft: #f7fbfa;
-          --surface-sage: #edf5f1;
-          --line: #dfe7e5;
-          --line-strong: #c9d8d4;
+          --surface-soft: #f8fafc;
+          --surface-sage: #f5f8f7;
+          --line: #e5e7eb;
+          --line-strong: #d1d5db;
           --text: #1f2937;
-          --muted: #667085;
-          --sage: #5c8476;
-          --sage-strong: #41685b;
+          --muted: #6b7280;
+          --sage: #6e8f82;
+          --sage-strong: #5f7f72;
           min-height: 100vh;
           padding: 28px 16px 72px;
-          background:
-            radial-gradient(circle at top left, rgba(121, 179, 157, 0.12), transparent 28%),
-            linear-gradient(180deg, #f4f8f7 0%, var(--bg) 100%);
+          background: var(--bg);
           color: var(--text);
           font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif;
           word-break: keep-all;
@@ -855,27 +853,14 @@ export default function HomePage() {
 
         .hero-card {
           position: relative;
-          overflow: hidden;
           padding: 18px 18px 20px;
-          border-radius: 28px;
-          border: 1px solid rgba(214, 226, 223, 0.95);
-          background:
-            radial-gradient(circle at top right, rgba(101, 155, 132, 0.16), transparent 28%),
-            radial-gradient(circle at top left, rgba(72, 117, 235, 0.1), transparent 24%),
-            linear-gradient(180deg, rgba(247, 251, 250, 0.98) 0%, rgba(255, 255, 255, 0.98) 100%);
-          box-shadow: 0 20px 48px rgba(74, 99, 91, 0.1);
-        }
-
-        .hero-card::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 24%);
-          pointer-events: none;
+          border-radius: 24px;
+          border: 1px solid var(--line);
+          background: var(--surface);
+          box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
         }
 
         .hero-top {
-          position: relative;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -893,25 +878,25 @@ export default function HomePage() {
           align-items: center;
           gap: 8px;
           color: var(--sage-strong);
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 800;
           letter-spacing: 0.02em;
           line-height: 1.2;
           flex: 0 0 auto;
-          padding: 8px 12px;
+          padding: 0;
           border-radius: 999px;
-          background: rgba(237, 245, 241, 0.9);
-          border: 1px solid #dbe8e3;
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+          background: transparent;
+          border: none;
+          box-shadow: none;
         }
 
         .eyebrow::before {
           content: "";
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
           border-radius: 999px;
-          background: linear-gradient(180deg, #79b39d 0%, #5c8476 100%);
-          box-shadow: 0 0 0 4px rgba(121, 179, 157, 0.14);
+          background: var(--sage);
+          box-shadow: none;
           flex: 0 0 auto;
         }
 
@@ -924,8 +909,8 @@ export default function HomePage() {
 
         .share-button {
           min-height: 36px;
-          border: 1px solid #d6def7;
-          background: rgba(255, 255, 255, 0.96);
+          border: 1px solid #dbe2f3;
+          background: #ffffff;
           color: var(--primary-strong);
           display: inline-flex;
           align-items: center;
@@ -936,7 +921,7 @@ export default function HomePage() {
           border-radius: 999px;
           font-weight: 700;
           font-size: 13px;
-          box-shadow: 0 8px 20px rgba(53, 105, 232, 0.08);
+          box-shadow: none;
           transition:
             color 0.15s ease,
             opacity 0.15s ease,
@@ -949,7 +934,7 @@ export default function HomePage() {
         .share-button:hover {
           color: #1e40af;
           border-color: #9bb6f3;
-          box-shadow: 0 8px 18px rgba(53, 105, 232, 0.12);
+          box-shadow: none;
           transform: translateY(-1px);
         }
 
@@ -994,7 +979,6 @@ export default function HomePage() {
         }
 
         .hero-copy-block {
-          position: relative;
           margin-top: 20px;
           max-width: 100%;
         }
@@ -1023,28 +1007,27 @@ export default function HomePage() {
           gap: 12px;
           margin-top: 20px;
           padding: 16px;
-          border-radius: 22px;
-          border: 1px solid rgba(214, 225, 239, 0.95);
-          background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.96) 100%);
-          box-shadow: 0 14px 30px rgba(69, 91, 126, 0.08);
+          border-radius: 18px;
+          border: 1px solid var(--line);
+          background: var(--surface-soft);
+          box-shadow: none;
         }
 
         .stage-row {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 8px;
+          gap: 6px;
           padding: 4px;
-          border: 1px solid #dbe5e2;
-          border-radius: 18px;
-          background: linear-gradient(180deg, #f4f8f7 0%, #eef4f3 100%);
+          border: 1px solid var(--line);
+          border-radius: 14px;
+          background: #f3f4f6;
         }
 
         .stage-button {
           border: 1px solid transparent;
           border-bottom: none;
           background: transparent;
-          border-radius: 14px;
+          border-radius: 12px;
           padding: 12px 8px 10px;
           text-align: center;
           cursor: pointer;
@@ -1076,8 +1059,8 @@ export default function HomePage() {
 
         .stage-button.is-active {
           border-color: #d7e2fd;
-          background: rgba(255, 255, 255, 0.96);
-          box-shadow: 0 10px 18px rgba(53, 105, 232, 0.08);
+          background: #ffffff;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         }
 
         .stage-button.is-active span {
@@ -1109,7 +1092,7 @@ export default function HomePage() {
           background: #ffffff;
           color: var(--text);
           line-height: 1.6;
-          box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4);
+          box-shadow: none;
         }
 
         .search-input:focus {
@@ -1120,7 +1103,7 @@ export default function HomePage() {
         .search-button {
           border: none;
           border-radius: 14px;
-          background: linear-gradient(180deg, #4277f2 0%, var(--primary) 100%);
+          background: var(--primary);
           color: #ffffff;
           display: inline-flex;
           align-items: center;
@@ -1131,7 +1114,7 @@ export default function HomePage() {
           cursor: pointer;
           width: 100%;
           min-height: 52px;
-          box-shadow: 0 14px 24px rgba(53, 105, 232, 0.22);
+          box-shadow: none;
         }
 
         .search-button:disabled {
@@ -1171,15 +1154,15 @@ export default function HomePage() {
 
         .quick-chip {
           border-radius: 999px;
-          border: 1px solid #d8e5e1;
-          background: linear-gradient(180deg, #ffffff 0%, var(--surface-sage) 100%);
+          border: 1px solid var(--line);
+          background: #ffffff;
           padding: 10px 14px;
           color: var(--text);
           cursor: pointer;
           font-weight: 600;
           flex: 0 0 auto;
           white-space: nowrap;
-          box-shadow: 0 8px 18px rgba(76, 99, 94, 0.05);
+          box-shadow: none;
         }
 
         .error-text {
@@ -1190,15 +1173,17 @@ export default function HomePage() {
 
         .result-stack {
           display: grid;
-          gap: 0;
-          margin-top: 8px;
+          gap: 12px;
+          margin-top: 16px;
         }
 
         .result-hero {
-          padding: 20px 0;
-          background: transparent !important;
+          padding: 20px;
+          background: #ffffff !important;
+          border: 1px solid var(--line);
           border-left: 4px solid currentColor;
-          padding-left: 20px;
+          border-radius: 18px;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
         }
 
         .result-main {
@@ -1390,8 +1375,11 @@ export default function HomePage() {
         }
 
         .panel-card {
-          background: transparent;
-          padding: 32px 0 0;
+          background: #ffffff;
+          padding: 18px;
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
         }
 
         .guide-section {
@@ -1429,7 +1417,7 @@ export default function HomePage() {
           padding: 12px 14px;
           border-radius: 12px;
           border: 1px solid #d7e3df;
-          background: linear-gradient(180deg, #ffffff 0%, var(--surface-sage) 100%);
+          background: #ffffff;
         }
 
         .choice-button {
@@ -1443,7 +1431,7 @@ export default function HomePage() {
         .choice-button:hover {
           transform: none;
           border-color: #c0d4fb;
-          background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
+          background: #f8fbff;
         }
 
         .guide-heading {
@@ -1454,23 +1442,27 @@ export default function HomePage() {
           letter-spacing: -0.02em;
         }
 
-        .guide-list {
-          display: grid;
-          gap: 12px;
+        .guide-shell {
           margin-top: 14px;
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          background: #ffffff;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+          overflow: hidden;
         }
 
         .guide-item {
-          border: 1px solid #dce7e4;
-          background: linear-gradient(180deg, #ffffff 0%, #f6fbf9 100%);
-          border-radius: 18px;
+          border-top: 1px solid var(--line);
+          background: transparent;
+          border-radius: 0;
           padding: 18px;
           color: var(--text);
-          box-shadow: 0 14px 28px rgba(76, 99, 94, 0.07);
+          box-shadow: none;
         }
 
         .guide-item-intro {
-          background: linear-gradient(180deg, #ffffff 0%, #edf6f1 52%, #f3f7ff 100%);
+          border-top: none;
+          background: #ffffff;
         }
 
         .guide-item h3 {
@@ -1506,13 +1498,12 @@ export default function HomePage() {
 
           .hero-card,
           .panel-card {
-            border-radius: 24px;
+            border-radius: 20px;
           }
 
           .result-hero {
-            border-radius: 0;
-            padding-left: 20px;
-            padding-right: 0;
+            border-radius: 16px;
+            padding: 18px;
           }
 
           .hero-title {
@@ -1535,7 +1526,7 @@ export default function HomePage() {
 
           .eyebrow {
             font-size: 12px;
-            padding: 7px 10px;
+            padding: 0;
           }
 
           .share-label-mobile {
@@ -1603,7 +1594,7 @@ export default function HomePage() {
 
           .search-panel {
             padding: 14px;
-            border-radius: 18px;
+            border-radius: 16px;
           }
         }
 
