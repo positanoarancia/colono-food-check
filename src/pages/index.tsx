@@ -195,50 +195,39 @@ function getStageLabel(dayStageSlug: string) {
   return stageOptions.find((option) => option.value === dayStageSlug)?.resultLabel ?? dayStageSlug;
 }
 
-function getFallbackActionPoints(dayStageSlug: string) {
-  if (dayStageSlug === "d1") {
-    return [
-      "전날에는 새로운 음식보다 이미 많이 안내되는 가벼운 음식 쪽이 더 안전해요",
-      "조금이라도 건더기나 자극이 강해 보이면 피하는 쪽으로 판단해 주세요",
-    ];
-  }
-
-  return [
-    "애매하면 더 단순하고 부드러운 음식으로 바꾸는 쪽이 좋아요",
-    "비슷한 음식군이 떠오르면 함께 검색해 보는 것이 가장 안전해요",
-  ];
-}
-
 function getFallbackGuide(dayStageSlug: string) {
   if (dayStageSlug === "d5") {
     return {
-      summary: "이럴 땐 이것만 보면 돼요",
+      summary: "자세히 보기",
+      title: "이럴 때는 이렇게 보세요",
       traits: [
-        "씨, 껍질, 잡곡, 해조류가 많이 들어가면 더 보수적으로 보는 편이 좋아요",
-        "부드럽고 단순한 재료에 가까울수록 비교적 안전한 쪽으로 볼 수 있어요",
+        "씨, 껍질, 잡곡, 해조류가 많으면 피하는 쪽이 좋아요",
+        "맑고 단순한 음식에 가까우면 상대적으로 더 안전해요",
       ],
-      stagePoint: "4–5일 전에는 장에 남기 쉬운 재료부터 줄이기 시작한다고 생각하면 쉬워요",
+      stagePoint: "4–5일 전에는 장에 남기 쉬운 재료부터 줄이기 시작한다고 보면 쉬워요",
     };
   }
 
   if (dayStageSlug === "d1") {
     return {
-      summary: "이럴 땐 이것만 보면 돼요",
+      summary: "자세히 보기",
+      title: "이럴 때는 이렇게 보세요",
       traits: [
-        "맵거나 건더기가 많으면 피하고, 흰죽이나 미음처럼 아주 가벼운 쪽에 가까운지 먼저 보세요",
-        "맑은 국물처럼 장에 거의 남지 않을 형태인지 보는 것이 가장 중요해요",
+        "맵거나 건더기가 많으면 피하는 쪽이 좋아요",
+        "흰죽이나 미음처럼 아주 가벼운 음식에 가까우면 더 안전해요",
       ],
       stagePoint: "1일 전에는 새로운 음식보다 이미 많이 안내되는 가벼운 음식에 더 가깝게 보는 편이 안전해요",
     };
   }
 
   return {
-    summary: "이럴 땐 이것만 보면 돼요",
+    summary: "자세히 보기",
+    title: "이럴 때는 이렇게 보세요",
     traits: [
-      "채소, 나물, 버섯, 씨 있는 과일처럼 장에 남기 쉬운 재료가 많으면 피하는 편이 좋아요",
-      "건더기가 많지 않고 부드러운 음식에 가까우면 상대적으로 더 안전한 쪽으로 볼 수 있어요",
+      "채소나 건더기가 많으면 피하는 쪽이 좋아요",
+      "부드럽고 단순한 음식에 가까우면 상대적으로 더 안전해요",
     ],
-    stagePoint: "2–3일 전에는 장에 남는 재료를 꽤 줄여야 하는 시기라고 보면 판단이 쉬워요",
+    stagePoint: "2–3일 전에는 장에 남는 재료를 꽤 줄여야 하는 시기라고 보면 쉬워요",
   };
 }
 
@@ -314,7 +303,7 @@ function getReferenceBadges(result: CheckResponse) {
 
 function getChoiceTips(result: CheckResponse) {
   if (result.matchedType === "fallback") {
-    return getFallbackActionPoints(result.dayStage.slug);
+    return [];
   }
 
   if (result.status === "allowed") {
@@ -338,21 +327,21 @@ function getShortReasons(result: CheckResponse) {
   if (result.matchedType === "fallback") {
     if (result.dayStage.slug === "d5") {
       return {
-        primary: "기준이 없어 조심하는 편이 좋아요",
-        secondary: "섬유질이나 씨, 껍질이 많아 보이면 피하는 쪽이 더 안전해요",
+        primary: "등록된 음식 기준이 없어 조심하는 편이 좋아요",
+        secondary: "씨나 껍질, 건더기가 많아 보이면 피하는 쪽이 더 안전해요",
       };
     }
 
     if (result.dayStage.slug === "d1") {
       return {
-        primary: "기준이 없어 조심하는 편이 좋아요",
-        secondary: "전날에는 맑고 부드러운 음식이 아니면 피하는 쪽으로 보는 편이 더 안전해요",
+        primary: "등록된 음식 기준이 없어 조심하는 편이 좋아요",
+        secondary: "전날에는 맑고 부드러운 음식이 아니면 피하는 쪽이 더 안전해요",
       };
     }
 
     return {
-      primary: "기준이 없어 조심하는 편이 좋아요",
-      secondary: "채소나 건더기가 많이 들어간 음식이면 피하는 쪽이 더 안전해요",
+      primary: "등록된 음식 기준이 없어 조심하는 편이 좋아요",
+      secondary: "채소나 건더기가 많아 보이면 피하는 쪽이 더 안전해요",
     };
   }
 
@@ -827,7 +816,11 @@ export default function HomePage() {
                         </span>
                       </summary>
                       <div className="detail-group">
-                        <strong>이렇게 판단한 이유</strong>
+                        <strong>
+                          {result.matchedType === "fallback"
+                            ? getFallbackGuide(result.dayStage.slug).title
+                            : "이렇게 판단한 이유"}
+                        </strong>
                         <ul className="detail-list">
                           {detailTraits.map((trait) => (
                             <li key={trait}>{trait}</li>
@@ -835,7 +828,7 @@ export default function HomePage() {
                           <li>{getStageImportantPoint(result.dayStage.slug, result.matchedType)}</li>
                         </ul>
                       </div>
-                      {detailChoiceTips.length > 0 ? (
+                      {detailChoiceTips.length > 0 && result.matchedType !== "fallback" ? (
                         <div className="detail-group">
                           <strong>이럴 때는 이렇게 고르세요</strong>
                           <ul className="detail-list">
