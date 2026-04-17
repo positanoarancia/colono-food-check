@@ -1,5 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { pathToFileURL } from "node:url";
+import {
+  additionalFoodGroups,
+  additionalFoodGroupTags,
+  bulkFoodCatalogs,
+} from "./bulk-catalog";
 
 const prisma = new PrismaClient();
 
@@ -78,6 +83,7 @@ export const foodGroups = [
   { id: "group_unknown_noodle", slug: "unknown-noodle", name: "미등록면류", description: "미등록 면 음식 임시 분류용", sortOrder: 90 },
   { id: "group_unknown_spicy", slug: "unknown-spicy-food", name: "미등록매운음식", description: "미등록 매운 음식 임시 분류용", sortOrder: 91 },
   { id: "group_unknown_processed", slug: "unknown-processed-food", name: "미등록가공식품", description: "미등록 가공식품 임시 분류용", sortOrder: 92 },
+  ...additionalFoodGroups,
 ].map((group) => ({
   ...group,
   isFallbackGroup: group.id.startsWith("group_unknown_"),
@@ -151,6 +157,7 @@ export const foodGroupTags = [
   ["group_fastfood", "tag_processed"],
   ["group_fastfood", "tag_fried"],
   ["group_fastfood", "tag_chunky"],
+  ...additionalFoodGroupTags,
 ].map(([foodGroupId, foodTagId]) => ({ foodGroupId, foodTagId, note: null }));
 
 const makeFood = (
@@ -172,7 +179,58 @@ const makeFood = (
   isRepresentative,
 });
 
-export const foods = [
+const generatedTagNotes: Record<string, string> = {
+  tag_spicy: "대표적인 조리법상 매운 양념이 자주 함께한다",
+  tag_dairy: "대표적인 조리법상 크림·치즈 등 유제품이 자주 들어간다",
+  tag_fried: "대표적인 조리법상 튀김 조리가 많다",
+  tag_seeded: "대표 재료 특성상 씨나 알갱이가 남기 쉽다",
+  tag_with_peel: "껍질째 먹거나 껍질 잔사가 남기 쉬운 편이다",
+  tag_whole_grain: "잡곡이나 메밀처럼 껍질·배아가 남는 곡물이 쓰인다",
+  tag_nuts: "견과류나 씨앗이 함께 들어가는 경우가 많다",
+  tag_seaweed: "해조류 재료가 직접 포함된다",
+  tag_vegetables_heavy: "대표 조리 형태에서 채소 건더기 비중이 높다",
+  tag_namul: "나물·무침 반찬처럼 섬유질 있는 반찬 성격이 강하다",
+  tag_processed: "가공도와 양념 구성이 복합적인 편이다",
+  tag_chunky: "국물·소스와 함께 건더기가 남는 편이다",
+  tag_low_fiber: "병원 안내문 공통 기준상 비교적 단순한 재료에 가깝다",
+  tag_soft: "조리 후 질감이 비교적 부드러운 편이다",
+  tag_clear_broth: "건더기 없는 맑은 유동식 계열에 가깝다",
+  tag_red_purple: "색이 진해 검사 전 보수적으로 보는 편이 낫다",
+};
+
+const bulkCatalogFoods = bulkFoodCatalogs.flatMap((catalog) =>
+  catalog.items.map((entry, index) =>
+    makeFood(
+      `food_${catalog.prefix}_${index + 1}`,
+      `${catalog.prefix}-${index + 1}`,
+      entry.name,
+      catalog.groupId,
+      entry.description,
+    ),
+  ),
+);
+
+const bulkCatalogAliases = bulkFoodCatalogs.flatMap((catalog) =>
+  catalog.items.flatMap((entry, index) =>
+    (entry.aliases ?? []).map((alias) => ({
+      foodId: `food_${catalog.prefix}_${index + 1}`,
+      alias,
+      normalizedAlias: normalize(alias),
+    })),
+  ),
+);
+
+const bulkCatalogFoodTagMaps = bulkFoodCatalogs.flatMap((catalog) =>
+  catalog.items.flatMap((entry, index) =>
+    (entry.tags ?? []).map((foodTagId) => ({
+      foodId: `food_${catalog.prefix}_${index + 1}`,
+      foodTagId,
+      note: generatedTagNotes[foodTagId] ?? "병원 안내문 공통 기준을 바탕으로 보조 분류한 태그",
+    })),
+  ),
+);
+
+const coreFoods = [
   makeFood("food_white_porridge", "white-porridge", "흰죽", "group_white_porridge", "대표 허용 죽", true),
   makeFood("food_rice_gruel", "rice-gruel", "미음", "group_white_porridge"),
   makeFood("food_white_rice", "white-rice", "흰쌀밥", "group_white_rice", "대표 허용 밥", true),
@@ -250,7 +308,9 @@ export const foods = [
   makeFood("food_plain_dumpling_soup", "plain-dumpling-soup", "만둣국", "group_stew"),
 ];
 
-export const foodAliases = [
+export const foods = [...coreFoods, ...bulkCatalogFoods];
+
+const coreFoodAliases = [
   ["food_white_porridge", "쌀죽"],
   ["food_white_porridge", "쌀미음"],
   ["food_white_porridge", "흰쌀죽"],
@@ -334,7 +394,9 @@ export const foodAliases = [
   normalizedAlias: normalize(alias),
 }));
 
-export const foodTagMaps = [
+export const foodAliases = [...coreFoodAliases, ...bulkCatalogAliases];
+
+const coreFoodTagMaps = [
   ["food_white_porridge", "tag_d1_soft_allowed", "전날에도 비교적 자주 허용되는 대표 죽류다"],
   ["food_rice_gruel", "tag_d1_soft_allowed", "건더기 적은 미음은 전날에도 비교적 무난하다"],
   ["food_white_rice", "tag_d1_soft_allowed", "흰쌀밥은 전날 식단 예시로 자주 안내된다"],
@@ -390,6 +452,8 @@ export const foodTagMaps = [
   ["food_plain_dumpling_soup", "tag_chunky", "만두 속재가 남을 수 있다"],
   ["food_plain_dumpling_soup", "tag_processed", "가공 만두류다"],
 ].map(([foodId, foodTagId, note]) => ({ foodId, foodTagId, note }));
+
+export const foodTagMaps = [...coreFoodTagMaps, ...bulkCatalogFoodTagMaps];
 
 const rule = (
   id: string,
@@ -624,6 +688,26 @@ export const ruleSources = [
     ["rule_d1_soft_allowed"],
     ["source_cmc", "source_cheongju_cmc", "source_ssmc", "source_eulji"],
     "전날 허용 음식 예시 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_processed", "rule_d3_processed", "rule_d1_processed"],
+    ["source_amc", "source_gs", "source_sev"],
+    "술, 육류, 기름진 음식 및 복합 양념 식사 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_chunky", "rule_d3_chunky", "rule_d1_chunky"],
+    ["source_gs", "source_ssmc", "source_cmc"],
+    "건더기, 밥, 당면이 많은 국물·소스 식사 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_spicy", "rule_d3_spicy", "rule_d1_spicy"],
+    ["source_gs", "source_cmc", "source_sev"],
+    "김치류와 매운 양념 음식 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_fried", "rule_d3_fried", "rule_d1_fried"],
+    ["source_gs", "source_amc"],
+    "튀김류와 기름진 음식 제한 근거",
   ),
   ...makeRuleSources(
     ["rule_d5_high_fiber", "rule_d3_high_fiber", "rule_d1_high_fiber"],
