@@ -2,14 +2,26 @@
 
 ## 현재 상태
 
-* 단계: Phase 19~21 완료, prewarm/SEO 기본 적용 완료, 공유/FAQ/전날 허용식 UX 보정 완료
-* 진행률: MVP 100%, Launch Prep 89%
-* 마지막 업데이트: 2026-04-17
+* 단계: Phase 19~21 완료, prewarm/SEO 기본 적용 완료, 공유/FAQ/전날 허용식 UX 보정 완료, DB 보강 1차 진행
+* 진행률: MVP 100%, Launch Prep 93%
+* 마지막 업데이트: 2026-04-18
 
 ---
 
 ## 최근 작업
 
+* 결과 상세를 `왜 이렇게 봤나요? / 대신 이렇게 고르세요 / 참고 근거` 2+1 구조로 줄이고, FAQ와 겹치던 일반 설명을 제거해 결과를 펼쳐도 같은 말을 여러 번 읽는 느낌을 완화
+* fallback 상단 안내 박스를 없애고, 상세에서도 `등록된 기준이 없어요` 같은 중복 문장을 빼고 자가판단 포인트만 남기도록 정리
+* FAQ를 공통 원칙 3문항 중심의 접힘 구조로 바꿔 결과-상세-FAQ가 세 번 반복되던 흐름을 줄임
+* 참고 근거 링크를 고를 때 URL 중복뿐 아니라 병원 라벨 중복도 더 강하게 줄이고, 검색어/단계별 seed로 시작점을 조금씩 회전시켜 같은 병원 링크만 먼저 반복되는 느낌을 완화
+* `ops:fallback-report` 스크립트를 추가해 `fallback / confidence C` 검색어를 총 검색 수, 단계, 최근 검색 시점 기준으로 콘솔에서 바로 추출할 수 있게 정리
+* 로컬 로그 기준 fallback 후보를 다시 확인해 `짬뽕`, `짜장면`, `자장면`이 상위 보강 후보로 바로 보이는지 검증
+* production 재반영을 위해 `db:sync-static` 스크립트를 추가하고, `SearchLog / Condition / DayStage`는 유지한 채 `food / alias / rule / source` 같은 정적 데이터만 다시 맞출 수 있게 정리
+* Vercel production 환경변수를 pull한 뒤 production DB에 `db:sync-static`를 실제 실행해 이번 food/alias/source 보강을 live DB에도 반영
+* production을 다시 배포하고 `/api/health`, 홈 `200`, `포카리`, `도토리묵`, `모닝빵`, `흑미밥`, `맑은쥬스` 샘플 검색이 live에서 기대대로 잡히는지 검증
+* 공식 병원 안내문 예시를 기준으로 `묵`, `쌀국수`, `흑미밥`, `호두`, `땅콩`, `김`, `미역`, `키위`, `참외`, `멜론`, `토마토`, `녹차`, `보리차`, `이온음료`, `사과주스` 등을 추가하고 alias도 대폭 보강해 seed 규모를 `foods 75 / aliases 77`까지 확장
+* `포카리`, `도토리묵`, `모닝빵`, `맑은쥬스`, `흑미밥` 샘플 조회에서 exact/alias 매칭과 기대 상태(`allowed`/`avoid`)가 실제로 잡히는지 확인
+* `묵`, `토마토`, `김`, `흑미밥`, `이온음료`, `사과주스`를 judgement 대표 케이스에 추가해 데이터 보강 회귀를 막는 테스트를 보강
 * food group 검색에서 `includes` 기반 부분 매칭을 제거하고, `흰`처럼 한 글자 입력은 fallback으로 남기되 `흰죽`처럼 자연스러운 그룹 검색은 `류` 접미사 없는 exact 매칭으로 유지
 * 검색 매칭 회귀를 막기 위해 `흰`은 group match가 아니고 `흰죽`/`흰죽류`는 group match가 되는 테스트를 추가
 * 공식 병원/건강검진센터 source를 12곳으로 확장하고, ruleSource를 166건까지 넓혀 음식 규칙별 참고 링크 풀이 특정 병원 몇 곳에만 묶이지 않도록 seed를 보강
@@ -111,6 +123,14 @@
 
 ### 수정 파일
 
+* [scripts/fallback-report.ts](/Users/badal/dev/projects/colono-food-check/scripts/fallback-report.ts)
+* [prisma/sync-static-data.ts](/Users/badal/dev/projects/colono-food-check/prisma/sync-static-data.ts)
+* [package.json](/Users/badal/dev/projects/colono-food-check/package.json)
+* [README.md](/Users/badal/dev/projects/colono-food-check/README.md)
+* [docs/operations-loop.md](/Users/badal/dev/projects/colono-food-check/docs/operations-loop.md)
+* [docs/production-runbook.md](/Users/badal/dev/projects/colono-food-check/docs/production-runbook.md)
+* [prisma/seed.ts](/Users/badal/dev/projects/colono-food-check/prisma/seed.ts)
+* [tests/judgement-engine.test.ts](/Users/badal/dev/projects/colono-food-check/tests/judgement-engine.test.ts)
 * [src/pages/index.tsx](/Users/badal/dev/projects/colono-food-check/src/pages/index.tsx)
 * [src/lib/check-food.ts](/Users/badal/dev/projects/colono-food-check/src/lib/check-food.ts)
 * [src/pages/api/prewarm.ts](/Users/badal/dev/projects/colono-food-check/src/pages/api/prewarm.ts)
@@ -119,6 +139,17 @@
 
 ### 결과
 
+* 결과 카드 아래를 펼쳤을 때도 같은 설명이 반복되는 양이 줄어들어 모바일에서 더 짧게 읽히게 됐다.
+* FAQ는 SEO용 본문을 유지하면서도 화면에서는 덜 길고 덜 방해되게 바뀌었다.
+* 결과 상세의 참고 근거가 기존보다 조금 더 다양한 병원 조합으로 보이게 됐다.
+* 검색어마다 참고 링크가 항상 같은 병원부터 시작되는 느낌이 줄어들었다.
+* 운영자는 이제 `npm run ops:fallback-report -- 20`만으로 다음 DB 보강 후보를 바로 볼 수 있다.
+* production 운영 DB를 지우지 않고도 정적 데이터만 안전하게 다시 맞출 수 있는 경로가 생겼다.
+* live 서비스에서 `포카리`, `도토리묵`, `모닝빵`, `맑은쥬스`, `흑미밥` 같은 보강 검색어가 실제로 exact/alias로 잡힌다.
+* 앞으로 food/alias/source 확장을 할 때 `db:seed` 대신 `db:sync-static`를 기준으로 운영 반영할 수 있게 됐다.
+* exact food / alias로 바로 잡히는 음식과 검색어 풀이 이전보다 눈에 띄게 넓어졌다.
+* 허용식 축에서는 `도토리묵`, `포카리`, `맑은쥬스`, `모닝빵` 같은 실제 검색어를 fallback 없이 안내할 수 있게 됐다.
+* 피해야 하는 축에서도 `흑미밥`, `토마토`, `김`, `키위`, `참외`, `멜론`, `호두`, `땅콩`처럼 병원 안내문에서 자주 제한하는 항목이 exact food로 잡힌다.
 * 결과를 보고 있는 상태에서 `초기 준비 / 준비 식단 / 전날 식단`을 바꾸면 버튼을 다시 누르지 않아도 바로 갱신됨
 * 화면 전반의 카드 덩어리 느낌이 줄고, 정보가 한 줄씩 자연스럽게 이어지는 구조로 바뀜
 * 모바일/PC 모두 같은 세로 흐름을 유지해 사용 패턴이 더 단순해짐
@@ -152,11 +183,25 @@
 
 ## 검증 결과
 
+* seed: 통과 (`npm run db:seed`)
+* static sync: 통과 (`npm run db:sync-static`)
+* fallback report: 통과 (`npm run ops:fallback-report -- 10`)
 * typecheck: 통과 (`npx tsc --noEmit`)
 * test: 통과 (`npm test`)
 * build: 통과 (`npm run build`)
-* seed: 통과 (`npm run db:seed`)
+* production verify:
+  * `https://colono-food-check.vercel.app` 홈 `200`
+  * `/api/health` -> `status: ok`, `database: connected`
+  * `포카리` -> alias / allowed
+  * `도토리묵` -> alias / allowed (`d3`)
+  * `모닝빵` -> alias / allowed
+  * `흑미밥` -> exact_food / avoid
+  * `맑은쥬스` -> alias / allowed
 * 디자인/사용성 반복 검수:
+  * 1차: production 반영을 위해 `db:seed`를 다시 돌리는 것은 운영 로그와 기존 데이터를 지울 수 있어 위험하다고 판단
+  * 2차: 화면 변경보다 safe sync 경로를 먼저 만드는 편이 현재 단계의 리스크를 크게 줄인다고 보고 종료
+  * 1차: fallback 문구를 더 줄이는 것보다 fallback 자체를 줄이는 게 우선이라 판단해 공식 병원 예시 기반 food/alias 확장을 우선 반영
+  * 2차: 화면에 새 정보를 더 추가하지 않고 exact/alias 커버리지만 넓히는 현재 방식이 MVP 범위와 모바일 UX 둘 다 지킨다고 보고 종료
   * 1차: 한 글자 검색이 완성형 결과처럼 보이면 사용자 신뢰가 떨어지므로 부분 검색은 fallback으로 보내는 편이 맞다고 판단
   * 2차: `류` 접미사 없는 자연어 그룹 검색(`흰죽`)은 유지되어야 해 exact 별칭만 남기고 종료
   * 1차: 공유 버튼 발견성이 낮고, 재검색 후 스크롤 위치가 흔들려 맥락이 끊기는 점을 문제로 확인
@@ -190,6 +235,14 @@
 
 ## Planner 리뷰 요약
 
+* 결과 페이지에서 사용자는 “판정 -> 이 음식 근거 -> 필요하면 공통 원칙” 순서로 읽기 때문에, 상세와 FAQ의 역할을 분리한 것이 사용자 가치에 더 맞다
+* 같은 근거라도 화면에 늘 같은 병원만 보이면 데이터가 좁아 보이므로, 현재처럼 표시 로직에서 다양성을 주는 보정은 신뢰감에 도움이 된다
+* DB를 한꺼번에 보강할 계획이라면 그 전에 `fallback 상위 검색어를 바로 뽑는 경로`를 만들어두는 것이 다음 작업 속도를 크게 높여준다
+* 운영 중 데이터 보강이 반복될 서비스라면 `초기화용 seed`와 `운영 반영용 sync`를 분리하는 것이 훨씬 현실적이다
+* 이번 라운드는 UI보다 live DB 반영 안정성이 더 중요한 시점이라서, 사용자에게 보이는 기능보다 반영 경로를 안전하게 만든 것이 우선순위에 맞다
+* 지금 단계에서 가장 큰 사용자 불편은 fallback 문구보다 “검색어가 안 잡히는 순간”이라서, 공식 안내문 예시를 exact/alias로 넓힌 것이 가치 대비 효과가 크다
+* 같은 규칙을 가진 음식이라도 사용자는 `도토리묵`, `포카리`, `모닝빵`처럼 실제 단어로 검색하므로 대표 음식만 늘리는 것보다 alias 확장이 더 중요하다
+* source를 10곳 이상 확보한 다음 food/alias를 넓히는 순서는 신뢰성과 검색 커버리지를 같이 키우는 방향으로 적절하다
 * 사용자는 미완성 입력에서도 안전한 안내를 기대하므로 `흰` 같은 부분 검색을 완성형 판정으로 처리하지 않는 것이 신뢰도에 직접 도움이 된다
 * 다만 `흰죽`처럼 실제 의도를 충분히 드러낸 검색은 계속 잡혀야 하므로 그룹명 접미사(`류`)만 흡수하는 좁은 보정이 MVP에 맞다
 * 공유 액션은 실제 추천/전달 흐름에 가까워서 상단에서 바로 발견되도록 텍스트 버튼으로 노출하는 편이 더 맞다
@@ -214,6 +267,15 @@
 
 ## Designer 리뷰 요약
 
+* 모바일에서는 결과를 펼친 직후 FAQ까지 이어져 보이기 때문에, 반복 문장을 줄이는 것만으로도 체감 밀도가 확실히 낮아진다
+* FAQ를 접힘으로 바꾸되 HTML 본문은 유지해서, 사용성 개선과 SEO 요구를 모두 무리 없이 같이 가져가는 방향이 적절하다
+* 참고 링크는 많이 보여주는 것보다 “늘 같은 것만 보이지 않게” 하는 편이 체감상 훨씬 자연스럽다
+* 운영용 fallback-report는 화면을 건드리지 않고 품질 개선 루프를 빠르게 만드는 변화라 UX 부담이 없다
+* 사용자가 체감하는 품질은 결국 live에서 검색어가 잡히는지에 달려 있으므로, 이번 운영 반영은 UX 관점에서도 의미가 크다
+* 화면을 더 손대지 않고도 production 검색 성공률을 올린 점은 현재 “중복 설명이 길다”는 문제를 악화시키지 않는다
+* 이번 라운드는 화면을 더 복잡하게 만들지 않고 fallback 빈도 자체를 줄이는 작업이라 모바일 UX 관점에서도 부담이 적다
+* 사용자가 치는 실제 단어가 바로 결과로 연결되면 FAQ나 상세 가이드를 펼치기 전에 결정이 가능해져 사용성이 좋아진다
+* 새 데이터 보강은 UI 변화 없이도 체감 품질을 올려주므로, 현재 과제인 “중복 설명이 길다”는 문제와도 간접적으로 맞물린다
 * 한 글자 검색에서 바로 확정 결과가 뜨면 사용자는 “검색이 알아서 완성됐다”고 오해할 수 있어 fallback 문구로 구분하는 편이 UI 의미가 더 분명하다
 * `흰죽` 같은 실제 그룹 검색은 유지되어 입력 흐름이 어색해지지 않으므로 이번 수정은 모바일 사용성에도 무리가 없다
 * 아이콘-only 공유 버튼보다 텍스트형 pill 버튼이 고령 사용자에게 훨씬 잘 보이고 눌러야 할 요소라는 인식도 분명하다
@@ -247,6 +309,12 @@
 
 ## 현재 문제 / 리스크
 
+* FAQ 접힘이 SEO에 큰 영향을 줄 가능성은 낮지만, 실제 Search Console 반영은 별도로 계속 봐야 한다.
+* 참고 링크 다양화는 화면 표시 순서 보정이어서, 실제 source pool이 충분히 넓지 않은 음식에서는 여전히 비슷한 병원이 반복될 수 있다.
+* fallback-report는 현재 `normalizedQuery` 기준 상위 후보를 뽑는 도구라서, 사람이 `한 글자 검색`이나 오타를 한 번 더 거르는 운영 판단은 여전히 필요하다.
+* `db:sync-static`는 정적 데이터 재동기화 용도라서, 이후 user-generated 데이터나 별도 운영 테이블이 늘어나면 삭제/재생성 범위를 다시 조정해야 한다.
+* production에 반영된 검색 품질은 좋아졌지만, 어떤 링크를 먼저 보여줄지는 여전히 UI 선택 로직에 영향을 받아 특정 병원이 자주 먼저 보일 수 있다.
+* `묵`, `맑은주스`처럼 병원 안내문에서 허용 예시로 보이는 항목도 병원별 세부 표현 차이가 있어 후속 운영에서 예외 케이스를 계속 확인해야 한다.
 * fallback 자가판단 문구는 방향을 잡아주지만 의료기관별 세부 예외를 모두 대체하진 못하므로, 병원 근거 링크와 대표 음식 DB 확장은 계속 필요하다.
 * 카카오 공유의 실제 단일 메시지 노출 여부는 기기/앱 버전 차이가 있어 production 모바일 실기기에서 한 번 더 확인하는 편이 안전하다.
 * PC에서 헤더 폭이 더 넓을 때 `건강신호등`과 `공유하기`의 간격이 과하게 벌어지지 않는지는 실제 브라우저에서 한 번 더 보는 편이 좋다.
@@ -265,6 +333,7 @@
 
 ## 다음 작업
 
+* SearchLog 상위 fallback 검색어를 다시 보고 2차 alias / food 후보를 보강하기
 * 병원 안내문 상세 URL을 source에 연결하고, rule/food/group별 참고 근거 링크 해상도를 높이기
 * Search Console 사이트맵 상태가 `성공`으로 바뀌는지 다시 확인
 * Notion 서비스 목록 항목에 추후 수익화 방식/월수익/핵심 키워드가 정리되면 보완

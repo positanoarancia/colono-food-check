@@ -300,10 +300,10 @@
 
 * [ ] 첫 실제 SearchLog 수집
 * [ ] fallback 검색어 상위 목록 확인
-* [ ] alias 보강 1차 반영
-* [ ] 신규 food 후보 보강 1차 반영
-* [ ] representative QA 재실행
-* [ ] STATUS.md 운영 상태 업데이트
+* [x] alias 보강 1차 반영
+* [x] 신규 food 후보 보강 1차 반영
+* [x] representative QA 재실행
+* [x] STATUS.md 운영 상태 업데이트
 
 ---
 
@@ -379,6 +379,17 @@
 
 ## 최근 완료 메모
 
+* [x] 결과 상세를 `왜 이렇게 봤나요? / 대신 이렇게 고르세요 / 참고 근거` 구조로 줄여 FAQ와 겹치던 일반 설명을 크게 정리
+* [x] fallback 상단 안내 박스를 제거하고, 상세 안에서도 `등록된 기준이 없어요` 같은 반복 문장을 빼고 자가판단 포인트만 남기도록 정리
+* [x] FAQ를 공통 원칙 3문항 중심의 접힘 구조로 바꿔 결과/상세/FAQ가 같은 말을 반복하는 문제 완화
+* [x] 참고 근거 링크를 고를 때 병원 라벨 중복을 줄이고 검색어별로 노출 시작점을 조금씩 다르게 잡아 같은 링크만 반복되는 느낌 완화
+* [x] `ops:fallback-report` 스크립트 추가로 `fallback / confidence C` 검색어를 개수, 단계, 최근 검색 시점 기준으로 바로 뽑을 수 있게 정리
+* [x] production-safe `db:sync-static` 경로 추가로 운영 DB에서 `food / alias / rule / source`만 안전하게 재동기화할 수 있게 정리
+* [x] Vercel production 환경변수 pull 후 live DB에 정적 데이터 sync 실제 반영
+* [x] production 재배포 및 `포카리 / 도토리묵 / 모닝빵 / 흑미밥 / 맑은쥬스` live 검색 검증
+* [x] 공식 병원 안내문에서 반복 등장하는 허용/피하기 예시를 기준으로 `food 75개 / alias 77개`까지 확장
+* [x] `포카리`, `도토리묵`, `모닝빵`, `맑은쥬스`, `흑미밥` 같은 실제 검색어가 exact/alias로 잡히도록 seed 보강
+* [x] `묵`, `이온음료`, `사과주스`, `김`, `흑미밥`, `토마토` 대표 케이스를 judgement test에 추가해 회귀 방지
 * [x] fallback 상세를 중복이 적은 2단 구조로 단순화해 실기기에서 겹쳐 보이는 문제 완화
 * [x] 현재 상태를 Vercel production에 재배포하고 live 응답 확인
 * [x] fallback 박스 제목을 판단 방법 중심 문구로 바꾸고 어려운 표현(`잔사`) 제거
@@ -403,7 +414,7 @@
 
 ## 현재 우선순위
 
-1. production 성능 로그 확인
-2. warm / cold 응답 차이 확인
-3. fallback 검색어 보강
-4. production 운영 루프 시작
+1. fallback 검색어 보강 2차
+2. SearchLog 운영 루프 재시작
+3. 참고 근거 링크 노출 실기기 확인
+4. production 실기기 확인

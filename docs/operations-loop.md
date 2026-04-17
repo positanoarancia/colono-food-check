@@ -104,6 +104,26 @@ group by "matchedType", "confidenceGrade"
 order by total desc;
 ```
 
+CLI로 바로 확인할 때:
+
+```bash
+npm run ops:fallback-report
+```
+
+필요하면 개수도 줄일 수 있다.
+
+```bash
+npm run ops:fallback-report -- 20
+```
+
+이 스크립트는 아래 정보를 한 번에 보여준다.
+
+- 검색어별 총 검색 수
+- fallback 수
+- confidence `C` 수
+- 최근 검색 시점
+- 어느 단계(`d5`, `d3`, `d1`)에서 나왔는지
+
 ## 현재 임시 기준
 
 - unknown noodle / spicy / processed fallback group은 아직 자동 분류에 쓰지 않는다.

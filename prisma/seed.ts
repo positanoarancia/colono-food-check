@@ -1,18 +1,19 @@
 import { PrismaClient } from "@prisma/client";
+import { pathToFileURL } from "node:url";
 
 const prisma = new PrismaClient();
 
 const normalize = (value: string) =>
   value.toLowerCase().replace(/\s+/g, "").replace(/[^\p{L}\p{N}]/gu, "");
 
-const condition = {
+export const condition = {
   id: "cond_colonoscopy",
   slug: "colonoscopy",
   name: "대장내시경",
   description: "대장내시경 준비 단계별 음식 허용 여부를 판정하는 condition",
 };
 
-const dayStages = [
+export const dayStages = [
   {
     id: "stage_colonoscopy_d5",
     conditionId: condition.id,
@@ -48,7 +49,7 @@ const dayStages = [
 // 2. Groups commonly mentioned in hospital prep guides.
 // 3. Everyday meals plus convenience-store and delivery patterns.
 // 4. Foods that are easy to confuse during colonoscopy prep.
-const foodGroups = [
+export const foodGroups = [
   { id: "group_white_porridge", slug: "white-porridge", name: "흰죽류", description: "미음, 흰죽처럼 부드러운 죽류", sortOrder: 1 },
   { id: "group_white_rice", slug: "white-rice", name: "흰밥류", description: "흰쌀밥 기반 주식", sortOrder: 2 },
   { id: "group_clear_noodle", slug: "clear-noodle", name: "국물면류", description: "우동, 잔치국수처럼 비교적 담백한 면", sortOrder: 3 },
@@ -82,7 +83,7 @@ const foodGroups = [
   isFallbackGroup: group.id.startsWith("group_unknown_"),
 }));
 
-const foodTags = [
+export const foodTags = [
   { id: "tag_d1_soft_allowed", slug: "d1-soft-allowed", name: "전날허용식", description: "전날에도 비교적 무난하게 안내하는 대표 저잔사 음식" },
   { id: "tag_low_fiber", slug: "low-fiber", name: "저섬유", description: "장에 남는 섬유질이 비교적 적은 음식" },
   { id: "tag_high_fiber", slug: "high-fiber", name: "고섬유", description: "잔여물이 남기 쉬운 섬유질이 많은 음식" },
@@ -103,7 +104,7 @@ const foodTags = [
   { id: "tag_red_purple", slug: "red-purple", name: "적색보라색", description: "검사 전 혼동을 줄 수 있는 색상 음식" },
 ];
 
-const foodGroupTags = [
+export const foodGroupTags = [
   ["group_white_porridge", "tag_low_fiber"],
   ["group_white_porridge", "tag_soft"],
   ["group_white_rice", "tag_low_fiber"],
@@ -172,14 +173,17 @@ const makeFood = (
   isRepresentative,
 });
 
-const foods = [
+export const foods = [
   makeFood("food_white_porridge", "white-porridge", "흰죽", "group_white_porridge", "대표 허용 죽", true),
   makeFood("food_rice_gruel", "rice-gruel", "미음", "group_white_porridge"),
   makeFood("food_white_rice", "white-rice", "흰쌀밥", "group_white_rice", "대표 허용 밥", true),
   makeFood("food_steamed_egg", "steamed-egg", "계란찜", "group_soft_protein"),
   makeFood("food_boiled_egg", "boiled-egg", "삶은계란", "group_soft_protein"),
+  makeFood("food_egg_roll", "egg-roll", "계란말이", "group_soft_protein"),
+  makeFood("food_scrambled_egg", "scrambled-egg", "스크램블에그", "group_soft_protein"),
   makeFood("food_tofu", "tofu", "두부", "group_soft_protein"),
   makeFood("food_soft_tofu", "soft-tofu", "연두부", "group_soft_protein"),
+  makeFood("food_muk", "muk", "묵", "group_soft_protein"),
   makeFood("food_potato", "potato", "감자", "group_root_starch"),
   makeFood("food_mashed_potato", "mashed-potato", "으깬감자", "group_root_starch"),
   makeFood("food_banana", "banana", "바나나", "group_soft_fruit", undefined, true),
@@ -189,11 +193,13 @@ const foods = [
   makeFood("food_white_bread", "white-bread", "식빵", "group_bread"),
   makeFood("food_udon", "udon", "우동", "group_clear_noodle"),
   makeFood("food_banquet_noodles", "banquet-noodles", "잔치국수", "group_clear_noodle"),
+  makeFood("food_rice_noodles", "rice-noodles", "쌀국수", "group_clear_noodle"),
   makeFood("food_ramen", "ramen", "라면", "group_stirfried_noodle"),
   makeFood("food_kimchi_stew", "kimchi-stew", "김치찌개", "group_stew"),
   makeFood("food_soybean_stew", "soybean-stew", "된장찌개", "group_stew"),
   makeFood("food_mixed_grain_rice", "mixed-grain-rice", "잡곡밥", "group_whole_grain"),
   makeFood("food_brown_rice", "brown-rice", "현미밥", "group_whole_grain"),
+  makeFood("food_black_rice", "black-rice", "흑미밥", "group_whole_grain"),
   makeFood("food_gimbap", "gimbap", "김밥", "group_convenience_rice"),
   makeFood("food_bibimbap", "bibimbap", "비빔밥", "group_convenience_meal"),
   makeFood("food_tteokbokki", "tteokbokki", "떡볶이", "group_tteokbokki"),
@@ -205,13 +211,25 @@ const foods = [
   makeFood("food_corn", "corn", "옥수수", "group_root_starch"),
   makeFood("food_nuts", "nuts", "견과류", "group_nuts"),
   makeFood("food_almond", "almond", "아몬드", "group_nuts"),
+  makeFood("food_walnut", "walnut", "호두", "group_nuts"),
+  makeFood("food_peanut", "peanut", "땅콩", "group_nuts"),
   makeFood("food_seaweed", "seaweed", "해조류", "group_seaweed"),
+  makeFood("food_gim", "gim", "김", "group_seaweed"),
+  makeFood("food_miyeok", "miyeok", "미역", "group_seaweed"),
   makeFood("food_seaweed_soup", "seaweed-soup", "미역국", "group_seaweed"),
   makeFood("food_kimchi", "kimchi", "김치", "group_namul"),
   makeFood("food_grape", "grape", "포도", "group_seeded_fruit"),
+  makeFood("food_kiwi", "kiwi", "키위", "group_seeded_fruit"),
+  makeFood("food_korean_melon", "korean-melon", "참외", "group_seeded_fruit"),
+  makeFood("food_melon", "melon", "멜론", "group_seeded_fruit"),
   makeFood("food_strawberry", "strawberry", "딸기", "group_seeded_fruit"),
   makeFood("food_watermelon", "watermelon", "수박", "group_seeded_fruit"),
+  makeFood("food_tomato", "tomato", "토마토", "group_seeded_fruit"),
   makeFood("food_coffee", "coffee", "커피", "group_clear_liquid"),
+  makeFood("food_green_tea", "green-tea", "녹차", "group_clear_liquid"),
+  makeFood("food_barley_tea", "barley-tea", "보리차", "group_clear_liquid"),
+  makeFood("food_isotonic_drink", "isotonic-drink", "이온음료", "group_clear_liquid"),
+  makeFood("food_clear_apple_juice", "clear-apple-juice", "사과주스", "group_clear_liquid"),
   makeFood("food_milk", "milk", "우유", "group_dairy"),
   makeFood("food_yogurt", "yogurt", "요거트", "group_dairy"),
   makeFood("food_pudding", "pudding", "푸딩", "group_low_fiber_snack"),
@@ -233,11 +251,17 @@ const foods = [
   makeFood("food_plain_dumpling_soup", "plain-dumpling-soup", "만둣국", "group_stew"),
 ];
 
-const foodAliases = [
+export const foodAliases = [
   ["food_white_porridge", "쌀죽"],
   ["food_white_porridge", "쌀미음"],
+  ["food_white_porridge", "흰쌀죽"],
+  ["food_rice_gruel", "쌀미음죽"],
+  ["food_steamed_egg", "달걀찜"],
   ["food_udon", "가락국수"],
   ["food_banquet_noodles", "국수"],
+  ["food_banquet_noodles", "소면"],
+  ["food_banquet_noodles", "온국수"],
+  ["food_banquet_noodles", "온면"],
   ["food_ramen", "분식라면"],
   ["food_salad", "샐러드볼"],
   ["food_milk", "커피우유"],
@@ -251,6 +275,8 @@ const foodAliases = [
   ["food_malatang", "마라샹궈"],
   ["food_udon", "컵우동"],
   ["food_banquet_noodles", "멸치국수"],
+  ["food_rice_noodles", "베트남쌀국수"],
+  ["food_rice_noodles", "맑은쌀국수"],
   ["food_ramen", "치즈라면"],
   ["food_yogurt", "요플레"],
   ["food_tteokbokki", "마라떡볶이"],
@@ -263,30 +289,73 @@ const foodAliases = [
   ["food_yogurt", "플레인요거트"],
   ["food_yogurt", "그릭요거트"],
   ["food_white_rice", "쌀밥"],
+  ["food_white_rice", "백미밥"],
   ["food_boiled_egg", "계란"],
+  ["food_boiled_egg", "삶은달걀"],
+  ["food_boiled_egg", "반숙계란"],
+  ["food_boiled_egg", "반숙란"],
+  ["food_egg_roll", "달걀말이"],
+  ["food_egg_roll", "계란말이반찬"],
+  ["food_scrambled_egg", "에그스크램블"],
   ["food_soft_tofu", "순두부"],
+  ["food_muk", "도토리묵"],
+  ["food_muk", "청포묵"],
+  ["food_potato", "삶은감자"],
+  ["food_potato", "감자삶은것"],
+  ["food_mashed_potato", "매시드포테이토"],
   ["food_kimchi", "배추김치"],
   ["food_fried_combo", "모듬튀김"],
   ["food_coffee", "아메리카노"],
+  ["food_green_tea", "녹차티"],
+  ["food_barley_tea", "보리물"],
+  ["food_isotonic_drink", "포카리"],
+  ["food_isotonic_drink", "포카리스웨트"],
+  ["food_isotonic_drink", "게토레이"],
+  ["food_clear_apple_juice", "맑은주스"],
+  ["food_clear_apple_juice", "맑은쥬스"],
+  ["food_clear_apple_juice", "맑은사과주스"],
   ["food_white_bread", "토스트"],
+  ["food_white_bread", "흰빵"],
+  ["food_white_bread", "하얀빵"],
+  ["food_white_bread", "모닝빵"],
+  ["food_white_bread", "롤빵"],
   ["food_pudding", "푸딩컵"],
+  ["food_plain_cracker", "비스킷"],
+  ["food_plain_cracker", "비스켓"],
+  ["food_plain_cracker", "크래커과자"],
+  ["food_clear_broth", "맑은육수국물"],
+  ["food_clear_broth", "멸치육수"],
+  ["food_clear_broth", "장국"],
+  ["food_clear_soup", "맑은국"],
+  ["food_gim", "김구이"],
+  ["food_tomato", "방울토마토"],
 ].map(([foodId, alias]) => ({
   foodId,
   alias,
   normalizedAlias: normalize(alias),
 }));
 
-const foodTagMaps = [
+export const foodTagMaps = [
   ["food_white_porridge", "tag_d1_soft_allowed", "전날에도 비교적 자주 허용되는 대표 죽류다"],
   ["food_rice_gruel", "tag_d1_soft_allowed", "건더기 적은 미음은 전날에도 비교적 무난하다"],
   ["food_white_rice", "tag_d1_soft_allowed", "흰쌀밥은 전날 식단 예시로 자주 안내된다"],
   ["food_castella", "tag_d1_soft_allowed", "카스테라는 전날 허용 간식 예시에 자주 포함된다"],
   ["food_white_bread", "tag_d1_soft_allowed", "식빵은 전날 허용 식사 예시에 자주 포함된다"],
   ["food_plain_cracker", "tag_d1_soft_allowed", "플레인 크래커는 전날에도 비교적 무난한 간식이다"],
+  ["food_egg_roll", "tag_low_fiber", "계란 위주의 부드러운 반찬은 비교적 단순한 편이다"],
+  ["food_egg_roll", "tag_soft", "부드럽게 익힌 계란 반찬이다"],
+  ["food_scrambled_egg", "tag_low_fiber", "부드러운 계란 요리라 비교적 단순한 편이다"],
+  ["food_scrambled_egg", "tag_soft", "잘 익힌 스크램블에그는 질감이 부드럽다"],
+  ["food_muk", "tag_low_fiber", "병원 안내문 예시에서 자주 허용 식품으로 언급된다"],
+  ["food_muk", "tag_soft", "부드럽고 건더기 부담이 적은 편이다"],
   ["food_potato", "tag_low_fiber", "껍질 제거 후 소량 섭취 기준"],
   ["food_potato", "tag_soft", "삶거나 으깨면 부담이 적다"],
   ["food_mashed_potato", "tag_low_fiber", "으깬 형태로 더 부드럽다"],
   ["food_mashed_potato", "tag_soft", "부드러운 전분 식품"],
+  ["food_clear_apple_juice", "tag_clear_broth", "건더기 없는 맑은 주스 예시에 가깝다"],
+  ["food_isotonic_drink", "tag_clear_broth", "맑은 음료 예시로 자주 안내된다"],
+  ["food_green_tea", "tag_clear_broth", "맑은 차 음료로 분류할 수 있다"],
+  ["food_barley_tea", "tag_clear_broth", "건더기 없는 맑은 차 음료다"],
   ["food_banana", "tag_low_fiber", "잘 익은 바나나는 비교적 무난하다"],
   ["food_apple", "tag_with_peel", "껍질째 먹는 경우 잔사가 남기 쉽다"],
   ["food_pear", "tag_with_peel", "껍질과 섬유질 주의"],
@@ -337,7 +406,7 @@ const rule = (
   priority,
 });
 
-const judgementRules = [
+export const judgementRules = [
   rule("rule_d5_low_fiber", "stage_colonoscopy_d5", "tag_low_fiber", "allowed", "섬유질이 적어 장에 잔여물이 남을 가능성이 상대적으로 낮습니다.", 30),
   rule("rule_d5_soft", "stage_colonoscopy_d5", "tag_soft", "allowed", "부드러운 질감이라 장에 부담이 비교적 적습니다.", 40),
   rule("rule_d5_clear_broth", "stage_colonoscopy_d5", "tag_clear_broth", "allowed", "건더기 없는 맑은 국물은 검사 준비 식단에 비교적 무난합니다.", 20),
@@ -392,7 +461,7 @@ const judgementRules = [
   rule("rule_d1_red_purple", "stage_colonoscopy_d1", "tag_red_purple", "avoid", "적색·보라색 음식은 검사 중 출혈이나 잔여물과 혼동될 수 있습니다.", 15),
 ];
 
-const foodSimilarities = [
+export const foodSimilarities = [
   { id: "sim_1", baseFoodId: "food_banana", similarFoodId: "food_apple", similarityType: "same_category" as const, note: "같은 과일군에서 비교적 무난한 선택", score: 75 },
   { id: "sim_2", baseFoodId: "food_banana", similarFoodId: "food_potato", similarityType: "substitute" as const, note: "부드러운 간식 대체", score: 82 },
   { id: "sim_3", baseFoodId: "food_ramen", similarFoodId: "food_udon", similarityType: "substitute" as const, note: "자극이 덜한 면류 대체", score: 88 },
@@ -407,7 +476,7 @@ const foodSimilarities = [
   { id: "sim_12", baseFoodId: "food_convenience_lunchbox", similarFoodId: "food_white_rice", similarityType: "substitute" as const, note: "복합 식사 대신 단순한 주식으로 대체", score: 81 },
 ];
 
-const recommendedMenus = [
+export const recommendedMenus = [
   {
     id: "menu_d5_breakfast",
     conditionId: condition.id,
@@ -476,7 +545,7 @@ const recommendedMenus = [
   },
 ];
 
-const recommendedMenuFoods = [
+export const recommendedMenuFoods = [
   { recommendedMenuId: "menu_d5_breakfast", foodId: "food_white_porridge", roleLabel: "주식", quantityNote: "1그릇", sortOrder: 1 },
   { recommendedMenuId: "menu_d5_breakfast", foodId: "food_steamed_egg", roleLabel: "단백질", quantityNote: "1회분", sortOrder: 2 },
   { recommendedMenuId: "menu_d5_lunch", foodId: "food_white_rice", roleLabel: "주식", quantityNote: "1공기 이하", sortOrder: 1 },
@@ -491,55 +560,115 @@ const recommendedMenuFoods = [
   { recommendedMenuId: "menu_d1_snack", foodId: "food_water", roleLabel: "수분", quantityNote: "함께", sortOrder: 2 },
 ];
 
-const sources = [
-  { id: "source_snuh", slug: "snuh-colonoscopy-guide", name: "서울대병원 대장내시경 준비 안내", kind: "hospital" as const, publisher: "서울대병원", url: "https://www.snuh.org/", note: null },
-  { id: "source_ssmc", slug: "ssmc-colonoscopy-guide", name: "삼성서울병원 대장내시경 준비 안내", kind: "hospital" as const, publisher: "삼성서울병원", url: "https://www.samsunghospital.com/", note: null },
-  { id: "source_cmc", slug: "cmc-colonoscopy-guide", name: "서울성모병원 대장내시경 준비 안내", kind: "hospital" as const, publisher: "서울성모병원", url: "https://www.cmcseoul.or.kr/", note: null },
+export const sources = [
+  { id: "source_amc", slug: "amc-checkup-colonoscopy", name: "서울아산병원 건강검진 유의사항", kind: "hospital" as const, publisher: "서울아산병원", url: "https://health.amc.seoul.kr/health/personal/reference.do", note: "3일 전 제한 음식과 장정결제 안내" },
+  { id: "source_ssmc", slug: "ssmc-colonoscopy-guide", name: "삼성서울병원 대장내시경 검사 안내", kind: "hospital" as const, publisher: "삼성서울병원", url: "https://www.samsunghospital.com/home/healthMedical/private/checkupInfo/examGuide06.do", note: "허용 음식과 제한 음식 예시 안내" },
+  { id: "source_cmc", slug: "cmc-colonoscopy-guide", name: "서울성모병원 대장내시경 준비 안내", kind: "hospital" as const, publisher: "서울성모병원", url: "https://healthcare.cmcseoul.or.kr/mw/personal/sub03_04.do", note: "3일 전 식이조절과 전날 식사 안내" },
+  { id: "source_sev", slug: "sev-colonoscopy-guide", name: "세브란스병원 헬스체크업 대장내시경 준비", kind: "hospital" as const, publisher: "세브란스병원", url: "https://sev.severance.healthcare/sev/patient-carer/appointment/checkup/health-ready02.do", note: "검진 전 준비와 대장내시경 식이조절 안내" },
+  { id: "source_gs", slug: "gs-colonoscopy-guide", name: "강남세브란스병원 헬스체크업 대장내시경 준비", kind: "hospital" as const, publisher: "강남세브란스병원", url: "https://gs.severance.healthcare/gs/patient-carer/appointment/checkup/health-ready02.do", note: "검진 전 준비와 대장내시경 식이조절 안내" },
+  { id: "source_eulji", slug: "eulji-colonoscopy-guide", name: "노원을지대학교병원 대장내시경 안내", kind: "hospital" as const, publisher: "노원을지대학교병원", url: "https://health.eulji.or.kr/info/info_pg02_01.jsp", note: "3일 전 제한 음식과 전날 허용 음식 예시 안내" },
+  { id: "source_cheongju_cmc", slug: "cheongju-cmc-colonoscopy-diet", name: "청주성모병원 대장내시경 식이조절 안내", kind: "hospital" as const, publisher: "청주성모병원", url: "https://www.ccmc.or.kr/reserve/reserve_03_05_02.php", note: "3일 전 피할 음식과 드실 수 있는 음식 안내" },
+  { id: "source_konkuk", slug: "konkuk-colonoscopy-checkup-guide", name: "건국대학교병원 헬스케어 대장내시경 준비 안내", kind: "hospital" as const, publisher: "건국대학교병원", url: "https://www.kuh.ac.kr/m/hcenter/company/company0301.do", note: "별도 안내문과 장세정제 복용 전 채변 안내" },
+  { id: "source_khmc", slug: "khmc-checkup-colonoscopy-guide", name: "경희대학교병원 건강증진센터 대장내시경 안내문", kind: "hospital" as const, publisher: "경희대학교병원", url: "https://med.khmc.or.kr/kr/treatment/center/2740000084/introduce.do", note: "첨부 대장내시경 안내문 참조 안내" },
+  { id: "source_knuh", slug: "knuh-colonoscopy-diet-guide", name: "경북대학교병원 대장내시경 식이조절 가이드", kind: "hospital" as const, publisher: "경북대학교병원", url: "https://health.knuh.kr/img/03info/down/file01.pdf", note: "별도 식이조절 가이드 참조 안내" },
+  { id: "source_uuh", slug: "uuh-checkup-guide", name: "울산대학교병원 건강증진센터 검진 절차 안내", kind: "hospital" as const, publisher: "울산대학교병원", url: "https://health.uuh.ulsan.kr/health/", note: "건강검진 절차와 대장내시경 준비 안내" },
+  { id: "source_pnuh", slug: "pnuh-checkup-guide", name: "부산대학교병원 건강증진센터 절차 안내", kind: "hospital" as const, publisher: "부산대학교병원", url: "https://health.pnuh.or.kr/health/index.do", note: "건강검진 절차와 대장내시경 준비 안내" },
   { id: "source_internal", slug: "health-signal-v1", name: "건강신호등 내부 큐레이션 v1", kind: "internal_guide" as const, publisher: "건강신호등", url: null, note: null },
 ];
 
-const foodSources: {
+export const foodSources: {
   foodId: string;
   sourceId: string;
   evidenceNote: string;
   isPrimary: boolean;
 }[] = [];
 
-const foodGroupSources: {
+export const foodGroupSources: {
   foodGroupId: string;
   sourceId: string;
   evidenceNote: string;
   isPrimary: boolean;
 }[] = [];
 
-const ruleSources = [
-  { judgementRuleId: "rule_d5_high_fiber", sourceId: "source_snuh", evidenceNote: "고섬유 음식 제한 근거" },
-  { judgementRuleId: "rule_d5_seeded", sourceId: "source_ssmc", evidenceNote: "씨 있는 음식 제한 근거" },
-  { judgementRuleId: "rule_d5_with_peel", sourceId: "source_snuh", evidenceNote: "껍질 있는 음식 주의 근거" },
-  { judgementRuleId: "rule_d5_whole_grain", sourceId: "source_cmc", evidenceNote: "잡곡 제한 근거" },
-  { judgementRuleId: "rule_d5_nuts", sourceId: "source_ssmc", evidenceNote: "견과류 제한 근거" },
-  { judgementRuleId: "rule_d5_seaweed", sourceId: "source_snuh", evidenceNote: "해조류 제한 근거" },
-  { judgementRuleId: "rule_d5_vegetables_heavy", sourceId: "source_cmc", evidenceNote: "채소 위주 식단 제한 근거" },
-  { judgementRuleId: "rule_d5_namul", sourceId: "source_ssmc", evidenceNote: "나물류 제한 근거" },
-  { judgementRuleId: "rule_d3_high_fiber", sourceId: "source_snuh", evidenceNote: "3일 전 고섬유 제한 근거" },
-  { judgementRuleId: "rule_d3_seeded", sourceId: "source_ssmc", evidenceNote: "3일 전 씨 있는 음식 제한 근거" },
-  { judgementRuleId: "rule_d3_with_peel", sourceId: "source_cmc", evidenceNote: "3일 전 껍질 식품 제한 근거" },
-  { judgementRuleId: "rule_d3_whole_grain", sourceId: "source_cmc", evidenceNote: "3일 전 잡곡 제한 근거" },
-  { judgementRuleId: "rule_d3_nuts", sourceId: "source_ssmc", evidenceNote: "3일 전 견과류 제한 근거" },
-  { judgementRuleId: "rule_d3_seaweed", sourceId: "source_snuh", evidenceNote: "3일 전 해조류 제한 근거" },
-  { judgementRuleId: "rule_d3_vegetables_heavy", sourceId: "source_cmc", evidenceNote: "3일 전 채소 많은 식단 제한 근거" },
-  { judgementRuleId: "rule_d3_namul", sourceId: "source_ssmc", evidenceNote: "3일 전 나물류 제한 근거" },
-  { judgementRuleId: "rule_d1_clear_broth", sourceId: "source_snuh", evidenceNote: "전날 맑은 유동식 우선 근거" },
-  { judgementRuleId: "rule_d1_clear_broth", sourceId: "source_ssmc", evidenceNote: "전날 맑은 국물 허용 근거" },
-  { judgementRuleId: "rule_d1_high_fiber", sourceId: "source_snuh", evidenceNote: "전날 고섬유 금지 근거" },
-  { judgementRuleId: "rule_d1_seeded", sourceId: "source_ssmc", evidenceNote: "전날 씨 있는 음식 금지 근거" },
-  { judgementRuleId: "rule_d1_with_peel", sourceId: "source_cmc", evidenceNote: "전날 껍질 식품 금지 근거" },
-  { judgementRuleId: "rule_d1_whole_grain", sourceId: "source_cmc", evidenceNote: "전날 잡곡 금지 근거" },
-  { judgementRuleId: "rule_d1_nuts", sourceId: "source_ssmc", evidenceNote: "전날 견과류 금지 근거" },
-  { judgementRuleId: "rule_d1_seaweed", sourceId: "source_snuh", evidenceNote: "전날 해조류 금지 근거" },
-  { judgementRuleId: "rule_d1_vegetables_heavy", sourceId: "source_cmc", evidenceNote: "전날 채소 많은 식단 금지 근거" },
-  { judgementRuleId: "rule_d1_namul", sourceId: "source_ssmc", evidenceNote: "전날 나물류 금지 근거" },
-  { judgementRuleId: "rule_d1_red_purple", sourceId: "source_cmc", evidenceNote: "적색·보라색 음식 제한 근거" },
+const makeRuleSources = (
+  judgementRuleIds: string[],
+  sourceIds: string[],
+  evidenceNote: string,
+) =>
+  judgementRuleIds.flatMap((judgementRuleId) =>
+    sourceIds.map((sourceId) => ({
+      judgementRuleId,
+      sourceId,
+      evidenceNote,
+    })),
+  );
+
+export const ruleSources = [
+  ...makeRuleSources(
+    ["rule_d5_low_fiber", "rule_d3_low_fiber", "rule_d1_low_fiber"],
+    ["source_ssmc", "source_cheongju_cmc", "source_eulji"],
+    "저섬유 음식 허용 예시 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_soft", "rule_d3_soft", "rule_d1_soft"],
+    ["source_eulji", "source_ssmc", "source_cheongju_cmc"],
+    "부드러운 음식 허용 또는 제한 기준 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_clear_broth", "rule_d3_clear_broth", "rule_d1_clear_broth"],
+    ["source_cmc", "source_ssmc", "source_eulji"],
+    "맑은 국물·유동식 권장 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d1_soft_allowed"],
+    ["source_cmc", "source_cheongju_cmc", "source_ssmc", "source_eulji"],
+    "전날 허용 음식 예시 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_high_fiber", "rule_d3_high_fiber", "rule_d1_high_fiber"],
+    ["source_amc", "source_eulji", "source_cmc", "source_cheongju_cmc", "source_sev", "source_gs"],
+    "섬유질 많은 음식 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_seeded", "rule_d3_seeded", "rule_d1_seeded"],
+    ["source_ssmc", "source_amc", "source_cmc", "source_eulji", "source_cheongju_cmc", "source_sev", "source_gs"],
+    "씨 있는 음식 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_with_peel", "rule_d3_with_peel", "rule_d1_with_peel"],
+    ["source_gs", "source_ssmc", "source_cmc", "source_eulji"],
+    "껍질 있는 음식 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_whole_grain", "rule_d3_whole_grain", "rule_d1_whole_grain"],
+    ["source_cmc", "source_cheongju_cmc", "source_amc", "source_eulji", "source_sev"],
+    "잡곡·현미 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_nuts", "rule_d3_nuts", "rule_d1_nuts"],
+    ["source_eulji", "source_cheongju_cmc", "source_amc", "source_cmc", "source_sev"],
+    "견과류 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_seaweed", "rule_d3_seaweed", "rule_d1_seaweed"],
+    ["source_amc", "source_cheongju_cmc", "source_cmc", "source_eulji", "source_sev"],
+    "해조류 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_vegetables_heavy", "rule_d3_vegetables_heavy", "rule_d1_vegetables_heavy"],
+    ["source_cheongju_cmc", "source_sev", "source_amc", "source_cmc", "source_eulji", "source_gs"],
+    "채소 많은 식단 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_namul", "rule_d3_namul", "rule_d1_namul"],
+    ["source_cmc", "source_amc", "source_eulji", "source_cheongju_cmc", "source_sev"],
+    "나물류 제한 근거",
+  ),
+  ...makeRuleSources(
+    ["rule_d5_red_purple", "rule_d3_red_purple", "rule_d1_red_purple"],
+    ["source_ssmc", "source_cmc"],
+    "적색·보라색 음식 제한 근거",
+  ),
 ];
 
 async function main() {
@@ -588,11 +717,16 @@ async function main() {
   console.log(`rules: ${judgementRules.length}`);
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+const isDirectRun =
+  typeof process.argv[1] === "string" && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isDirectRun) {
+  main()
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

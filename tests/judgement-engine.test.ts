@@ -75,9 +75,11 @@ const representativeCases = [
   { food: "연두부", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "감자", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "닭가슴살", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
+  { food: "묵", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "바나나", tags: ["low", "soft"], d5: "allowed", d3: "allowed", d1: "caution" },
   { food: "사과", tags: ["withPeel"], d5: "caution", d3: "avoid", d1: "avoid" },
   { food: "배", tags: ["withPeel"], d5: "caution", d3: "avoid", d1: "avoid" },
+  { food: "토마토", tags: ["seeded", "high", "redPurple"], d5: "avoid", d3: "avoid", d1: "avoid" },
   { food: "카스테라", tags: ["low", "soft", "d1SoftAllowed"], d5: "allowed", d3: "allowed", d1: "allowed" },
   { food: "푸딩", tags: ["soft", "processed"], d5: "caution", d3: "caution", d1: "avoid" },
   { food: "우유", tags: ["dairy", "processed"], d5: "caution", d3: "caution", d1: "avoid" },
@@ -106,7 +108,11 @@ const representativeCases = [
   { food: "나물반찬", tags: ["high", "namul"], d5: "avoid", d3: "avoid", d1: "avoid" },
   { food: "고구마", tags: ["high", "withPeel"], d5: "avoid", d3: "avoid", d1: "avoid" },
   { food: "견과류", tags: ["nuts", "high"], d5: "avoid", d3: "avoid", d1: "avoid" },
+  { food: "김", tags: ["seaweed", "high"], d5: "avoid", d3: "avoid", d1: "avoid" },
+  { food: "흑미밥", tags: ["whole", "high"], d5: "avoid", d3: "avoid", d1: "avoid" },
   { food: "맑은육수", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
+  { food: "이온음료", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
+  { food: "사과주스", tags: ["clear"], d5: "allowed", d3: "allowed", d1: "allowed" },
 ];
 
 function tagsToCandidates(tags: string[]) {

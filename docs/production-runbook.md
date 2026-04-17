@@ -56,6 +56,17 @@ npm run build
 - 운영 중에는 `db:seed` 재실행 금지다.
 - 운영 중 데이터 보강은 필요한 `alias`, `food`, `rule`만 선택적으로 반영한다.
 
+운영 중 정적 데이터 보강 기준:
+
+```bash
+npm run db:sync-static
+```
+
+`db:sync-static`는 아래를 유지한 채 정적 데이터만 다시 맞춘다.
+
+- 유지: `SearchLog`, `Condition`, `DayStage`
+- 재동기화: `foodGroup`, `foodTag`, `food`, `foodAlias`, `foodTagMap`, `judgementRule`, `recommendedMenu`, `source`, 각 source link
+
 ## 4. production 검증 절차
 
 배포 후 아래 순서로 확인한다.

@@ -236,6 +236,7 @@ npx tsc --noEmit
 npm run prisma:generate
 npm run db:push
 npm run db:seed
+npm run db:sync-static
 ```
 
 ---
@@ -271,6 +272,17 @@ npm run db:push
 npm run db:seed
 npm run build
 ```
+
+운영 중 정적 데이터만 보강할 때:
+
+```bash
+npm run db:sync-static
+```
+
+설명:
+
+- `db:seed`: 초기화 성격. production 최초 1회만 사용
+- `db:sync-static`: `SearchLog`, `Condition`, `DayStage`는 유지하고 `food / alias / rule / source` 같은 정적 데이터만 다시 맞춤
 
 운영 문서:
 

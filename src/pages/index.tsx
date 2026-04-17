@@ -81,14 +81,19 @@ const siteUrl = getSiteUrl();
 const canonicalUrl = `${siteUrl}/`;
 const faqItems = [
   {
-    question: "검사 전 어떤 음식 피해야 하나요?",
+    question: "언제부터 식단을 조절하나요?",
     answer:
-      "채소, 잡곡, 견과류, 해조류처럼 장에 남기 쉬운 음식은 먼저 줄이는 편이 좋아요.",
+      "보통 4–5일 전부터 장에 남기 쉬운 음식을 줄이고, 2–3일 전부터는 더 가볍게 드시는 편이 좋아요.",
   },
   {
-    question: "언제부터 식단 조절하나요?",
+    question: "병원 안내와 다르면 무엇을 따라야 하나요?",
     answer:
-      "보통 4–5일 전부터 섬유질 많은 음식을 줄이고, 2–3일 전부터는 더 가볍게 보는 편이 안전해요.",
+      "검사 일정과 장정결제 복용 방법은 병원 안내가 가장 우선이에요. 화면 결과와 다르면 병원 안내를 먼저 따라주세요.",
+  },
+  {
+    question: "검색 결과가 없으면 어떻게 판단하나요?",
+    answer:
+      "씨, 껍질, 잡곡, 해조류, 채소처럼 장에 남기 쉬운 재료가 많은지 먼저 보고, 애매하면 더 부드럽고 단순한 음식으로 고르는 편이 안전해요.",
   },
 ] as const;
 const pageDescription =
@@ -129,31 +134,112 @@ const detailBadgeLabel: Record<string, string> = {
   "soft-food": "부드러운 음식",
 };
 
-function getMatchedSummary(result: CheckResponse) {
-  if (result.matchedType === "alias" && result.matchedEntity?.type === "food_alias") {
-    return `"${result.query}"를 "${result.matchedEntity.canonicalFood?.name}"로 인식해 판단했습니다.`;
-  }
+type RuleReference = CheckResponse["topAppliedRules"][number]["references"][number];
 
-  if (result.matchedType === "food_group" && result.matchedEntity?.type === "food_group") {
-    return `"${result.matchedEntity.name}" 음식군 기준으로 판단했습니다.`;
-  }
+function getReferenceSeed(result: CheckResponse) {
+  const key = `${result.query}:${result.dayStage.slug}:${result.status}:${result.topAppliedRules
+    .map((rule) => rule.tagSlug)
+    .join(",")}`;
 
-  if (result.matchedType === "fallback") {
-    return "대표 음식으로 아직 등록되지 않아 보수적 기준으로 안내했습니다.";
-  }
-
-  return "직접 등록된 대표 음식 기준으로 판단했습니다.";
+  return Array.from(key).reduce((acc, char) => acc + char.charCodeAt(0), 0);
 }
 
-function getFallbackCopy() {
-  return {
-    title: "등록된 기준이 없어 보수적으로 안내하고 있어요",
-    body: "비슷한 음식도 함께 확인해보세요",
-  };
+function pickDetailReferences(result: CheckResponse, maxItems = 3) {
+  const uniqueReferences = result.topAppliedRules
+    .flatMap((rule) => rule.references)
+    .filter(
+      (reference, index, array) =>
+        array.findIndex((item) => item.url === reference.url) === index,
+    );
+
+  if (uniqueReferences.length <= maxItems) {
+    return uniqueReferences;
+  }
+
+  const seed = getReferenceSeed(result);
+  const rotated = uniqueReferences.map((reference, index) => ({
+    ...reference,
+    sortKey: (index + seed) % uniqueReferences.length,
+  }));
+
+  const preferred = rotated
+    .slice()
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .reduce<RuleReference[]>((selected, current) => {
+      if (selected.some((item) => item.label === current.label)) {
+        return selected;
+      }
+
+      if (selected.length >= maxItems) {
+        return selected;
+      }
+
+      selected.push({ label: current.label, url: current.url });
+      return selected;
+    }, []);
+
+  if (preferred.length >= maxItems) {
+    return preferred;
+  }
+
+  const remaining = rotated
+    .slice()
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .map((reference) => ({ label: reference.label, url: reference.url }))
+    .filter((reference) => !preferred.some((item) => item.url === reference.url));
+
+  return [...preferred, ...remaining].slice(0, maxItems);
 }
 
 function getStageLabel(dayStageSlug: string) {
   return stageOptions.find((option) => option.value === dayStageSlug)?.resultLabel ?? dayStageSlug;
+}
+
+function getFallbackActionPoints(dayStageSlug: string) {
+  if (dayStageSlug === "d1") {
+    return [
+      "전날에는 새로운 음식보다 이미 많이 안내되는 가벼운 음식 쪽이 더 안전해요",
+      "조금이라도 건더기나 자극이 강해 보이면 피하는 쪽으로 판단해 주세요",
+    ];
+  }
+
+  return [
+    "애매하면 더 단순하고 부드러운 음식으로 바꾸는 쪽이 좋아요",
+    "비슷한 음식군이 떠오르면 함께 검색해 보는 것이 가장 안전해요",
+  ];
+}
+
+function getFallbackGuide(dayStageSlug: string) {
+  if (dayStageSlug === "d5") {
+    return {
+      summary: "이럴 땐 이것만 보면 돼요",
+      traits: [
+        "씨, 껍질, 잡곡, 해조류가 많이 들어가면 더 보수적으로 보는 편이 좋아요",
+        "부드럽고 단순한 재료에 가까울수록 비교적 안전한 쪽으로 볼 수 있어요",
+      ],
+      stagePoint: "4–5일 전에는 장에 남기 쉬운 재료부터 줄이기 시작한다고 생각하면 쉬워요",
+    };
+  }
+
+  if (dayStageSlug === "d1") {
+    return {
+      summary: "이럴 땐 이것만 보면 돼요",
+      traits: [
+        "맵거나 건더기가 많으면 피하고, 흰죽이나 미음처럼 아주 가벼운 쪽에 가까운지 먼저 보세요",
+        "맑은 국물처럼 장에 거의 남지 않을 형태인지 보는 것이 가장 중요해요",
+      ],
+      stagePoint: "1일 전에는 새로운 음식보다 이미 많이 안내되는 가벼운 음식에 더 가깝게 보는 편이 안전해요",
+    };
+  }
+
+  return {
+    summary: "이럴 땐 이것만 보면 돼요",
+    traits: [
+      "채소, 나물, 버섯, 씨 있는 과일처럼 장에 남기 쉬운 재료가 많으면 피하는 편이 좋아요",
+      "건더기가 많지 않고 부드러운 음식에 가까우면 상대적으로 더 안전한 쪽으로 볼 수 있어요",
+    ],
+    stagePoint: "2–3일 전에는 장에 남는 재료를 꽤 줄여야 하는 시기라고 보면 판단이 쉬워요",
+  };
 }
 
 function getFoodTraits(result: CheckResponse) {
@@ -161,7 +247,7 @@ function getFoodTraits(result: CheckResponse) {
   const traits: string[] = [];
 
   if (result.matchedType === "fallback") {
-    return ["등록된 음식 기준이 아직 없어요"];
+    return getFallbackGuide(result.dayStage.slug).traits;
   }
 
   if (tagSet.has("high-fiber") || tagSet.has("vegetables-heavy") || tagSet.has("namul")) {
@@ -203,7 +289,11 @@ function getFoodTraits(result: CheckResponse) {
   return traits.slice(0, 2);
 }
 
-function getStageImportantPoint(dayStageSlug: string) {
+function getStageImportantPoint(dayStageSlug: string, matchedType?: CheckResponse["matchedType"]) {
+  if (matchedType === "fallback") {
+    return getFallbackGuide(dayStageSlug).stagePoint;
+  }
+
   if (dayStageSlug === "d5") {
     return "대장내시경 4–5일 전에는 섬유질 많은 음식부터 줄이는 편이 좋아요";
   }
@@ -222,33 +312,57 @@ function getReferenceBadges(result: CheckResponse) {
     .slice(0, 3);
 }
 
-function getReferencePoints(result: CheckResponse) {
+function getChoiceTips(result: CheckResponse) {
   if (result.matchedType === "fallback") {
-    return ["등록된 음식 정보를 먼저 확인했어요"];
+    return getFallbackActionPoints(result.dayStage.slug);
   }
 
-  const points: string[] = [];
+  if (result.status === "allowed") {
+    if (result.dayStage.slug === "d1") {
+      return [
+        "전날에는 양을 많이 늘리기보다 가볍게 드세요",
+        "새로운 음식보다 이미 무난한 음식으로 유지하는 편이 좋아요",
+      ];
+    }
 
-  if (result.topAppliedRules.some((rule) => rule.source === "food")) {
-    points.push("등록된 음식 정보를 먼저 확인했어요");
+    return [
+      "자극적이거나 건더기 많은 음식으로 다시 바꾸지 않는 편이 좋아요",
+      "비슷한 음식 중에서도 더 부드럽고 단순한 쪽이 잘 맞아요",
+    ];
   }
 
-  if (result.topAppliedRules.some((rule) => rule.source === "food_group")) {
-    points.push("필요할 때는 비슷한 음식 정보도 함께 참고했어요");
+  if (result.status === "caution") {
+    return [
+      "건더기 적은 음식이나 더 부드러운 음식으로 바꿔보세요",
+      "맑은 국물이나 흰죽처럼 단순한 음식이 더 잘 맞아요",
+    ];
   }
 
-  if (points.length === 0) {
-    points.push("등록된 음식 정보를 먼저 확인했어요");
-  }
-
-  return points.slice(0, 2);
+  return [
+    "맑은 국물이나 흰죽처럼 장에 덜 남는 음식으로 바꿔보세요",
+    "이 시기에는 채소나 건더기, 강한 양념이 적은 쪽이 더 안전해요",
+  ];
 }
 
 function getShortReasons(result: CheckResponse) {
   if (result.matchedType === "fallback") {
+    if (result.dayStage.slug === "d5") {
+      return {
+        primary: "기준이 없어 조심하는 편이 좋아요",
+        secondary: "섬유질이나 씨, 껍질이 많아 보이면 피하는 쪽이 더 안전해요",
+      };
+    }
+
+    if (result.dayStage.slug === "d1") {
+      return {
+        primary: "기준이 없어 조심하는 편이 좋아요",
+        secondary: "전날에는 맑고 부드러운 음식이 아니면 피하는 쪽으로 보는 편이 더 안전해요",
+      };
+    }
+
     return {
       primary: "기준이 없어 조심하는 편이 좋아요",
-      secondary: "비슷한 음식도 함께 확인해보세요",
+      secondary: "채소나 건더기가 많이 들어간 음식이면 피하는 쪽이 더 안전해요",
     };
   }
 
@@ -553,16 +667,8 @@ export default function HomePage() {
   const shortReasons = result ? getShortReasons(result) : null;
   const detailTraits = result ? getFoodTraits(result) : [];
   const detailBadges = result ? getReferenceBadges(result) : [];
-  const detailReferencePoints = result ? getReferencePoints(result) : [];
-  const detailReferences = result
-    ? result.topAppliedRules
-        .flatMap((rule) => rule.references)
-        .filter(
-          (reference, index, array) =>
-            array.findIndex((item) => item.url === reference.url) === index,
-        )
-        .slice(0, 2)
-    : [];
+  const detailChoiceTips = result ? getChoiceTips(result) : [];
+  const detailReferences = result ? pickDetailReferences(result) : [];
   const faqStructuredData = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -709,12 +815,6 @@ export default function HomePage() {
                   {shortReasons?.secondary ? (
                     <p className="secondary-reason">{shortReasons.secondary}</p>
                   ) : null}
-                  {result.matchedType === "fallback" ? (
-                    <div className="fallback-callout">
-                      <p className="fallback-text is-primary">{getFallbackCopy().title}</p>
-                      <p>{getFallbackCopy().body}</p>
-                    </div>
-                  ) : null}
                   {detailBadges.length > 0 ? (
                     <div className="tag-row">
                       {detailBadges.map((badge) => (
@@ -724,32 +824,31 @@ export default function HomePage() {
                       ))}
                     </div>
                   ) : null}
-                  {(detailTraits.length > 0 || detailReferencePoints.length > 0) ? (
+                  {(detailTraits.length > 0 || detailChoiceTips.length > 0) ? (
                     <details className="details-box">
                       <summary>
-                        <span>왜 이렇게 안내하나요?</span>
+                        <span>
+                          {result.matchedType === "fallback"
+                            ? getFallbackGuide(result.dayStage.slug).summary
+                            : "상세 보기"}
+                        </span>
                         <span className="summary-chevron" aria-hidden="true">
                           ▾
                         </span>
                       </summary>
                       <div className="detail-group">
-                        <strong>이 음식의 특징</strong>
+                        <strong>왜 이렇게 봤나요?</strong>
                         <ul className="detail-list">
                           {detailTraits.map((trait) => (
                             <li key={trait}>{trait}</li>
                           ))}
+                          <li>{getStageImportantPoint(result.dayStage.slug, result.matchedType)}</li>
                         </ul>
                       </div>
                       <div className="detail-group">
-                        <strong>지금 왜 주의해야 하나요?</strong>
+                        <strong>대신 이렇게 고르세요</strong>
                         <ul className="detail-list">
-                          <li>{getStageImportantPoint(result.dayStage.slug)}</li>
-                        </ul>
-                      </div>
-                      <div className="detail-group">
-                        <strong>판단에 참고한 내용</strong>
-                        <ul className="detail-list">
-                          {detailReferencePoints.map((point) => (
+                          {detailChoiceTips.map((point) => (
                             <li key={point}>{point}</li>
                           ))}
                         </ul>
@@ -809,14 +908,19 @@ export default function HomePage() {
           <div className="guide-shell">
             <section className="guide-item guide-item-intro">
               <h3>먼저 이렇게 이해하면 쉬워요</h3>
-              <p>대장내시경 전에는 음식에 따라 먹어도 되는 시기가 다를 수 있습니다.</p>
-              <p>김치찌개, 라면, 샐러드 같은 음식도 단계에 따라 섭취 여부가 달라질 수 있습니다.</p>
+              <p>검색 결과는 지금 시점의 빠른 판단용이에요.</p>
+              <p>검사 일정과 장정결제 복용 방법은 병원 안내를 가장 먼저 따라주세요.</p>
             </section>
             {faqItems.map((item) => (
-              <section key={item.question} className="guide-item">
-                <h3>{item.question}</h3>
+              <details key={item.question} className="guide-item">
+                <summary className="guide-summary">
+                  <span>{item.question}</span>
+                  <span className="summary-chevron" aria-hidden="true">
+                    ▾
+                  </span>
+                </summary>
                 <p>{item.answer}</p>
-              </section>
+              </details>
             ))}
           </div>
         </section>
@@ -1259,9 +1363,10 @@ export default function HomePage() {
         .secondary-reason {
           margin: 6px 0 0;
           font-size: 16px;
-          line-height: 1.6;
-          max-width: 480px;
-          color: #8b95a1;
+          line-height: 1.68;
+          max-width: 468px;
+          color: #7b8794;
+          letter-spacing: -0.01em;
         }
 
         .action-grid {
@@ -1270,15 +1375,17 @@ export default function HomePage() {
         }
 
         .fallback-callout {
-          padding: 8px 0 0;
+          padding: 10px 0 0;
           background: transparent;
           border: none;
+          max-width: 468px;
         }
 
         .fallback-text {
           margin: 0;
-          line-height: 1.6;
-          max-width: 480px;
+          line-height: 1.72;
+          max-width: 468px;
+          letter-spacing: -0.01em;
         }
 
         .fallback-text.is-primary {
@@ -1341,10 +1448,11 @@ export default function HomePage() {
         }
 
         .detail-group strong {
-          font-size: 16px;
+          font-size: 15px;
           line-height: 1.6;
           color: #374151;
-          font-weight: 600;
+          font-weight: 700;
+          letter-spacing: -0.01em;
         }
 
         .detail-list {
@@ -1355,9 +1463,10 @@ export default function HomePage() {
         }
 
         .detail-list li {
-          color: #6b7280;
+          color: #667085;
           font-size: 15px;
-          font-weight: 400;
+          font-weight: 500;
+          letter-spacing: -0.01em;
         }
 
         .reference-link {
@@ -1481,6 +1590,27 @@ export default function HomePage() {
         .guide-item-intro {
           border-top: none;
           background: transparent;
+        }
+
+        .guide-summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          cursor: pointer;
+          list-style: none;
+          font-size: 15px;
+          line-height: 1.6;
+          font-weight: 700;
+          color: var(--text);
+        }
+
+        .guide-summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .guide-item[open] .summary-chevron {
+          transform: rotate(180deg);
         }
 
         .guide-item h3 {
