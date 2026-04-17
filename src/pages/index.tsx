@@ -1493,7 +1493,7 @@ export default function HomePage() {
 
         @media (max-width: 720px) {
           .page {
-            padding: 16px 12px 48px;
+            padding: 16px 16px 48px;
           }
 
           .hero-card,
@@ -1503,7 +1503,7 @@ export default function HomePage() {
 
           .result-hero {
             border-radius: 0;
-            padding: 0 0 0 16px;
+            padding: 0 0 0 18px;
           }
 
           .hero-title {
