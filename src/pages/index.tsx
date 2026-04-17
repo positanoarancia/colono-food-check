@@ -833,8 +833,7 @@ export default function HomePage() {
           --line-strong: #d1d5db;
           --text: #1f2937;
           --muted: #6b7280;
-          --sage: #6e8f82;
-          --sage-strong: #5f7f72;
+          --brand: #64748b;
           min-height: 100vh;
           padding: 28px 16px 72px;
           background: var(--bg);
@@ -874,28 +873,13 @@ export default function HomePage() {
         .eyebrow {
           display: flex;
           align-items: center;
-          gap: 8px;
-          color: var(--sage-strong);
-          font-size: 12px;
+          color: var(--brand);
+          font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.02em;
           line-height: 1.2;
           flex: 0 0 auto;
           padding: 0;
-          border-radius: 999px;
-          background: transparent;
-          border: none;
-          box-shadow: none;
-        }
-
-        .eyebrow::before {
-          content: "";
-          width: 6px;
-          height: 6px;
-          border-radius: 999px;
-          background: var(--sage);
-          box-shadow: none;
-          flex: 0 0 auto;
         }
 
         .share-box {
@@ -1525,7 +1509,7 @@ export default function HomePage() {
           }
 
           .eyebrow {
-            font-size: 12px;
+            font-size: 13px;
             padding: 0;
           }
 
