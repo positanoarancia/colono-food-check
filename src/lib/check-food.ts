@@ -521,6 +521,22 @@ async function findFoodGroupRepresentatives(foodGroupId: string) {
   });
 }
 
+async function findAlternativeFoodsFromGroup(foodGroupId: string, excludeFoodId?: string) {
+  return prisma.food.findMany({
+    where: {
+      primaryFoodGroupId: foodGroupId,
+      ...(excludeFoodId ? { id: { not: excludeFoodId } } : {}),
+    },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+    },
+    orderBy: [{ isRepresentative: "desc" }, { searchPriority: "desc" }, { name: "asc" }],
+    take: 4,
+  });
+}
+
 async function findSimilarFoods(foodId: string) {
   return prisma.foodSimilarity.findMany({
     where: { baseFoodId: foodId },
@@ -975,6 +991,7 @@ export async function checkFoodByQuery(input: {
     let similarFoods: CheckFoodResult["similarFoods"] = [];
     let matchedId: string | null = null;
     let matchedFoodId: string | null = null;
+    let matchedPrimaryFoodGroupId: string | null = null;
     let directReferences: Array<{ label: string; url: string }> = [];
 
     const [exactFood, aliasMatch] = normalizedQuery
@@ -1016,6 +1033,7 @@ export async function checkFoodByQuery(input: {
       matchedType = "exact_food";
       matchedId = exactFood.id;
       matchedFoodId = exactFood.id;
+      matchedPrimaryFoodGroupId = exactFood.primaryFoodGroupId;
       matchedEntity = {
         type: "food",
         id: exactFood.id,
@@ -1030,6 +1048,7 @@ export async function checkFoodByQuery(input: {
       matchedType = "alias";
       matchedId = aliasMatch.id;
       matchedFoodId = aliasMatch.food.id;
+      matchedPrimaryFoodGroupId = aliasMatch.food.primaryFoodGroupId;
       matchedEntity = {
         type: "food_alias",
         id: aliasMatch.id,
@@ -1114,6 +1133,22 @@ export async function checkFoodByQuery(input: {
         name: item.similarFood.name,
         note: item.note,
       }));
+
+      if (!similarFoods.length && matchedPrimaryFoodGroupId) {
+        const alternatives = await measureStep(
+          "group_representative_fallback_query",
+          requestContext,
+          timings,
+          async () => findAlternativeFoodsFromGroup(matchedPrimaryFoodGroupId!, matchedFoodId),
+        );
+
+        similarFoods = alternatives.map((food: FoodGroupRepresentative) => ({
+          id: food.id,
+          slug: food.slug,
+          name: food.name,
+          note: "같은 음식군에서 함께 볼 만한 음식입니다.",
+        }));
+      }
     } else if (!similarFoods.length) {
       await measureStep("similar_foods_query", requestContext, timings, async () =>
         Promise.resolve([]),

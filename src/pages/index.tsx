@@ -122,6 +122,7 @@ const statusConfig = {
 
 const detailBadgeLabel: Record<string, string> = {
   "d1-soft-allowed": "전날 허용식",
+  "low-fiber": "부담 적음",
   "vegetables-heavy": "채소 많음",
   "high-fiber": "섬유질 많음",
   chunky: "건더기 많음",
@@ -129,6 +130,12 @@ const detailBadgeLabel: Record<string, string> = {
   fried: "기름진 음식",
   seeded: "씨 있음",
   "with-peel": "껍질 있음",
+  "whole-grain": "잡곡",
+  nuts: "견과류",
+  seaweed: "해조류",
+  namul: "나물류",
+  processed: "가공식품",
+  "red-purple": "색 진함",
   dairy: "유제품",
   "clear-broth": "맑은 국물",
   "soft-food": "부드러운 음식",
