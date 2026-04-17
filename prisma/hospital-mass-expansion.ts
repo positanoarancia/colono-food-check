@@ -25,6 +25,61 @@ const item = (
 
 const uniq = (values: string[]) => Array.from(new Set(values.filter(Boolean)));
 
+const spacedSuffixes = [
+  "볶음밥",
+  "덮밥",
+  "비빔밥",
+  "주먹밥",
+  "찌개",
+  "전골",
+  "국밥",
+  "칼국수",
+  "수제비",
+  "비빔국수",
+  "국수",
+  "냉면",
+  "우동",
+  "소바",
+  "라면",
+  "짬뽕",
+  "짜장면",
+  "파스타",
+  "스파게티",
+  "리조또",
+  "샐러드",
+  "샌드위치",
+  "버거",
+  "주스",
+  "스무디",
+  "볶음",
+  "무침",
+  "나물",
+  "겉절이",
+  "조림",
+  "튀김",
+  "구이",
+  "정식",
+  "백반",
+  "죽",
+  "국",
+  "탕",
+  "전",
+];
+
+const spaceVariant = (name: string) => {
+  if (name.includes(" ")) {
+    return name.replaceAll(" ", "");
+  }
+
+  for (const suffix of spacedSuffixes) {
+    if (name.length > suffix.length + 1 && name.endsWith(suffix)) {
+      return `${name.slice(0, -suffix.length)} ${suffix}`;
+    }
+  }
+
+  return null;
+};
+
 const autoAliases = (name: string) => {
   const aliases = new Set<string>();
 
@@ -39,6 +94,9 @@ const autoAliases = (name: string) => {
   if (name.includes("자장")) aliases.add(name.replaceAll("자장", "짜장"));
   if (name.includes("짜장")) aliases.add(name.replaceAll("짜장", "자장"));
   if (name.includes("샐러드")) aliases.add(name.replaceAll("샐러드", "셀러드"));
+
+  const spacingAlias = spaceVariant(name);
+  if (spacingAlias) aliases.add(spacingAlias);
 
   aliases.delete(name);
   return Array.from(aliases);

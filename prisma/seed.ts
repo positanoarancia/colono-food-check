@@ -354,6 +354,8 @@ const coreFoodAliases = [
   ["food_banquet_noodles", "온국수"],
   ["food_banquet_noodles", "온면"],
   ["food_ramen", "분식라면"],
+  ["food_kimchi_stew", "김치 찌개"],
+  ["food_soybean_stew", "된장 찌개"],
   ["food_salad", "샐러드볼"],
   ["food_milk", "커피우유"],
   ["food_sandwich", "에그샌드위치"],

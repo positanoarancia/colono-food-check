@@ -52,3 +52,17 @@ test("official hospital sources stay broad after bulk expansion", () => {
     `expected at least 10 official hospital sources but got ${hospitalSources.length}`,
   );
 });
+
+test("bulk expansion creates common variant aliases", () => {
+  const aliasSet = new Set(foodAliases.map((alias) => alias.alias));
+
+  for (const expected of [
+    "김치 찌개",
+    "갈릭까르보나라스파게티",
+    "새우토마토스파게티",
+    "돈가스",
+    "자장면",
+  ]) {
+    assert.ok(aliasSet.has(expected), `missing variant alias: ${expected}`);
+  }
+});
