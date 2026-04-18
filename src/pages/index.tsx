@@ -724,7 +724,7 @@ export default function HomePage() {
             <h1 className="hero-title">대장내시경 전에 먹어도 될까?</h1>
             <div className="hero-trust-block">
               <p className="hero-copy">국내 주요 대학병원 대장내시경 안내문을 바탕으로 정리했어요.</p>
-              <p className="hero-note">최종 준비 기준과 약 복용 일정은 병원 안내가 우선입니다.</p>
+              <p className="hero-note">최종 식단과 복용 일정은 병원 안내를 먼저 따라주세요.</p>
             </div>
           </div>
 
@@ -1120,7 +1120,7 @@ export default function HomePage() {
 
         .hero-trust-block {
           display: grid;
-          gap: 2px;
+          gap: 1px;
           margin-top: 18px;
           max-width: 560px;
         }
@@ -1147,8 +1147,7 @@ export default function HomePage() {
           display: grid;
           gap: 14px;
           margin-top: 24px;
-          padding: 20px 0 0;
-          border-top: 1px solid var(--line);
+          padding: 12px 0 0;
           border-radius: 0;
           border-right: none;
           border-bottom: none;
@@ -1366,12 +1365,12 @@ export default function HomePage() {
         }
 
         .decision-context {
-          margin: 6px 0 0;
-          color: #8b95a1;
-          font-size: 14px;
+          margin: 4px 0 0;
+          color: #98a2b3;
+          font-size: 13px;
           font-weight: 500;
           max-width: 480px;
-          line-height: 1.6;
+          line-height: 1.55;
         }
 
         .primary-reason {
@@ -1443,12 +1442,12 @@ export default function HomePage() {
           gap: 12px;
           width: 100%;
           cursor: pointer;
-          font-weight: 700;
-          color: var(--text);
+          font-weight: 600;
+          color: #4b5563;
           list-style: none;
-          font-size: 14px;
-          line-height: 1.6;
-          padding: 8px 0;
+          font-size: 13px;
+          line-height: 1.55;
+          padding: 6px 0;
           transition: color 0.15s ease, opacity 0.15s ease;
         }
 
@@ -1458,7 +1457,6 @@ export default function HomePage() {
 
         .details-box summary:hover {
           color: var(--primary);
-          background: rgba(53, 105, 232, 0.04);
         }
 
         .details-box summary:active {
@@ -1466,14 +1464,15 @@ export default function HomePage() {
         }
 
         .summary-chevron {
-          font-size: 16px;
-          color: var(--primary);
+          font-size: 14px;
+          color: #94a3b8;
           font-weight: 700;
           transition: transform 0.15s ease, color 0.15s ease;
         }
 
         .details-box[open] .summary-chevron {
           transform: rotate(180deg);
+          color: var(--primary);
         }
 
         .detail-group {
@@ -1524,9 +1523,9 @@ export default function HomePage() {
         .tag-row {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
+          gap: 6px;
           margin-top: 10px;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
           max-width: 480px;
         }
 
@@ -1534,16 +1533,16 @@ export default function HomePage() {
           display: inline-flex;
           align-items: center;
           border-radius: 999px;
-          padding: 6px 10px;
-          font-size: 12px;
+          padding: 5px 9px;
+          font-size: 11px;
           font-weight: 700;
-          color: #4b5563;
-          border: 1px solid #d8e3df;
+          color: #667085;
+          border: 1px solid #e5e7eb;
         }
 
         .panel-card {
           background: transparent;
-          padding: 18px 0 0;
+          padding: 16px 0 0;
           border: none;
           border-top: 1px solid var(--line);
           border-radius: 0;
@@ -1551,7 +1550,7 @@ export default function HomePage() {
         }
 
         .guide-section {
-          padding: 44px 0 0;
+          padding: 56px 0 0;
         }
 
         .panel-header {
@@ -1582,8 +1581,8 @@ export default function HomePage() {
         .choice-button {
           width: 100%;
           text-align: left;
-          padding: 12px 14px;
-          border-radius: 12px;
+          padding: 10px 14px;
+          border-radius: 10px;
           border: 1px solid #d7e3df;
           background: #ffffff;
         }
@@ -1591,7 +1590,7 @@ export default function HomePage() {
         .choice-button {
           cursor: pointer;
           text-align: center;
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 700;
           color: var(--primary);
         }
@@ -1615,10 +1614,11 @@ export default function HomePage() {
           color: var(--muted);
           font-size: 14px;
           line-height: 1.6;
+          max-width: 32ch;
         }
 
         .guide-shell {
-          margin-top: 14px;
+          margin-top: 18px;
           border-top: 1px solid var(--line);
           border-radius: 0;
           background: transparent;
@@ -1740,6 +1740,10 @@ export default function HomePage() {
           .hero-copy,
           .primary-reason {
             font-size: 16px;
+          }
+
+          .hero-note {
+            font-size: 13px;
           }
 
           .decision-status {

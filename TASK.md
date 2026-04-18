@@ -243,6 +243,7 @@
 * [x] direct hospital food 검색 표현(`계란 음식`, `두부 음식`, `국물 음식`, `맑은 음료수`) alias 보강 및 smoke test 고정
 * [x] fruit/direct food 문구형 검색어(`사과 배 바나나`, `씨 있는 과일`) alias 보강 및 smoke test 고정
 * [x] `씨 있는 과일` 문구는 exact food alias 대신 `씨있는과일류` food group match 경로로 정리하고 회귀 테스트 보강
+* [x] 홈 검수 반영으로 날짜 피커 위 구분선 제거, 안내 문구 축약, 결과/FAQ 밀도 조정
 * [x] fallback 박스 제목을 판단 방법 중심 문구로 바꾸고 어려운 표현(`잔사`) 제거
 * [x] fallback 상세 토글을 날짜별 자가판단 가이드로 맞추고 문구 가독성을 위한 폰트/줄길이 보정
 * [x] fallback 결과 문구를 날짜별 자가판단형 안내로 나눠 기준이 없을 때도 다음 판단 기준을 바로 볼 수 있게 보정
