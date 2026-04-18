@@ -151,7 +151,7 @@ function getReferenceSeed(result: CheckResponse) {
   return Array.from(key).reduce((acc, char) => acc + char.charCodeAt(0), 0);
 }
 
-function pickDetailReferences(result: CheckResponse, maxItems = 3) {
+function pickDetailReferences(result: CheckResponse, maxItems = 2) {
   const uniqueReferences = result.topAppliedRules
     .flatMap((rule) => rule.references)
     .filter(
