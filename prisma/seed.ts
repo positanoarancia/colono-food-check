@@ -431,7 +431,6 @@ const coreFoodAliases = [
   ["food_hospital_direct_liquid_3", "맑은 음료수"],
   ["food_hospital_direct_liquid_2", "건더기 없는 국물"],
   ["food_hospital_direct_soft_fruit_1", "사과 배 바나나"],
-  ["food_hospital_direct_seeded_1", "씨 있는 과일"],
   ["food_gim", "김구이"],
   ["food_tomato", "방울토마토"],
 ].map(([foodId, alias]) => ({
