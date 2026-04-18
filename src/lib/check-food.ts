@@ -408,6 +408,34 @@ function getGeneralFallbackCopy(dayStageSlug: string) {
   };
 }
 
+function isTooShortQueryForJudgement(normalizedQuery: string) {
+  return normalizedQuery.length <= 1;
+}
+
+function getShortQueryFallbackCopy(dayStageSlug: string) {
+  if (dayStageSlug === "d1") {
+    return {
+      status: "caution" as const,
+      primaryReason: "검색어를 조금 더 구체적으로 입력해 주세요",
+      secondaryReason: "전날 식단은 기준이 더 엄격해서 음식 이름을 끝까지 확인하는 편이 안전해요",
+    };
+  }
+
+  if (dayStageSlug === "d5") {
+    return {
+      status: "caution" as const,
+      primaryReason: "검색어를 조금 더 구체적으로 입력해 주세요",
+      secondaryReason: "한 글자만으로는 음식 종류를 정확히 구분하기 어려워요",
+    };
+  }
+
+  return {
+    status: "caution" as const,
+    primaryReason: "검색어를 조금 더 구체적으로 입력해 주세요",
+    secondaryReason: "음식 이름을 끝까지 입력하면 더 정확하게 안내할 수 있어요",
+  };
+}
+
 function rankAlternativeFoods<T extends { name: string; isRepresentative?: boolean; searchPriority?: number }>(
   foods: T[],
 ) {
@@ -1394,8 +1422,12 @@ export async function checkFoodByQuery(input: {
       );
     }
 
+    const isShortQueryFallback =
+      matchedType === "fallback" && isTooShortQueryForJudgement(normalizedQuery);
     const fallbackCategory =
-      matchedType === "fallback" ? inferFallbackCategory(normalizedQuery) : null;
+      matchedType === "fallback" && !isShortQueryFallback
+        ? inferFallbackCategory(normalizedQuery)
+        : null;
 
     logCheckFood("match.summary", {
       ...requestContext,
@@ -1425,7 +1457,22 @@ export async function checkFoodByQuery(input: {
     if (matchedType === "fallback") {
       const fallbackReferences = fallbackCategory?.references ?? fallbackGeneralReferences;
 
-      if (fallbackCategory) {
+      if (isShortQueryFallback) {
+        const shortQueryFallbackCopy = getShortQueryFallbackCopy(stageBundle.dayStage.slug);
+
+        finalStatus = shortQueryFallbackCopy.status;
+        finalPrimaryReason = shortQueryFallbackCopy.primaryReason;
+        finalSecondaryReason = shortQueryFallbackCopy.secondaryReason;
+        finalAppliedTagSlugs = [];
+        finalTopAppliedRules = [
+          buildFallbackRule(
+            "fallback-short-query",
+            shortQueryFallbackCopy.status,
+            finalPrimaryReason,
+            [],
+          ),
+        ];
+      } else if (fallbackCategory) {
         finalStatus = fallbackCategory.statusByStage[stageBundle.dayStage.slug] ?? "caution";
         finalPrimaryReason =
           fallbackCategory.primaryReasonByStage[stageBundle.dayStage.slug] ??
@@ -1459,7 +1506,11 @@ export async function checkFoodByQuery(input: {
       }
     }
 
-    if (!similarFoods.length && (matchedType === "fallback" || finalStatus !== "allowed")) {
+    if (
+      !similarFoods.length &&
+      !isShortQueryFallback &&
+      (matchedType === "fallback" || finalStatus !== "allowed")
+    ) {
       similarFoods = getSafeAlternativeFoods(stageBundle.dayStage.slug, [input.query]);
     }
 

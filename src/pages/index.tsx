@@ -1307,7 +1307,7 @@ export default function HomePage() {
 
         .result-stack {
           display: grid;
-          gap: 18px;
+          gap: 20px;
           margin-top: 24px;
         }
 
@@ -1423,7 +1423,7 @@ export default function HomePage() {
         .details-box {
           border: none;
           background: transparent;
-          padding: 10px 0 0;
+          padding: 12px 0 0;
         }
 
         .details-box summary {
@@ -1433,12 +1433,12 @@ export default function HomePage() {
           gap: 12px;
           width: 100%;
           cursor: pointer;
-          font-weight: 600;
-          color: #4b5563;
+          font-weight: 500;
+          color: #667085;
           list-style: none;
-          font-size: 13px;
-          line-height: 1.55;
-          padding: 6px 0;
+          font-size: 12px;
+          line-height: 1.5;
+          padding: 4px 0;
           transition: color 0.15s ease, opacity 0.15s ease;
         }
 
@@ -1455,8 +1455,8 @@ export default function HomePage() {
         }
 
         .summary-chevron {
-          font-size: 14px;
-          color: #94a3b8;
+          font-size: 12px;
+          color: #98a2b3;
           font-weight: 700;
           transition: transform 0.15s ease, color 0.15s ease;
         }
@@ -1468,13 +1468,13 @@ export default function HomePage() {
 
         .detail-group {
           display: grid;
-          gap: 10px;
-          margin-top: 16px;
+          gap: 8px;
+          margin-top: 14px;
           max-width: 480px;
         }
 
         .detail-group strong {
-          font-size: 15px;
+          font-size: 14px;
           line-height: 1.6;
           color: #374151;
           font-weight: 700;
@@ -1485,12 +1485,12 @@ export default function HomePage() {
           margin: 0;
           padding-left: 18px;
           display: grid;
-          gap: 8px;
+          gap: 7px;
         }
 
         .detail-list li {
           color: #667085;
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 500;
           letter-spacing: -0.01em;
         }
@@ -1533,7 +1533,7 @@ export default function HomePage() {
 
         .panel-card {
           background: transparent;
-          padding: 16px 0 0;
+          padding: 18px 0 0;
           border: none;
           border-top: 1px solid var(--line);
           border-radius: 0;
@@ -1541,7 +1541,7 @@ export default function HomePage() {
         }
 
         .guide-section {
-          padding: 56px 0 0;
+          padding: 68px 0 0;
         }
 
         .panel-header {
@@ -1549,7 +1549,7 @@ export default function HomePage() {
           justify-content: space-between;
           align-items: center;
           gap: 12px;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
         }
 
         .panel-header h3 {
@@ -1572,7 +1572,7 @@ export default function HomePage() {
         .choice-button {
           width: 100%;
           text-align: left;
-          padding: 10px 14px;
+          padding: 9px 14px;
           border-radius: 10px;
           border: 1px solid #d7e3df;
           background: #ffffff;
@@ -1581,7 +1581,7 @@ export default function HomePage() {
         .choice-button {
           cursor: pointer;
           text-align: center;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 700;
           color: var(--primary);
         }
