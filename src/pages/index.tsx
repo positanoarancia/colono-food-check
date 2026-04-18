@@ -107,13 +107,13 @@ const statusConfig = {
     chip: "#EAF8EF",
   },
   caution: {
-    label: "조금 주의가 필요해요",
+    label: "가급적 먹지 마세요",
     color: "#F59E0B",
     bg: "#FFF9EF",
     chip: "#FEF3C7",
   },
   avoid: {
-    label: "지금은 피하는 게 좋아요",
+    label: "절대 먹지 마세요",
     color: "#DC2626",
     bg: "#FEF8F8",
     chip: "#FEE2E2",
@@ -196,6 +196,10 @@ function pickDetailReferences(result: CheckResponse, maxItems = 3) {
     .filter((reference) => !preferred.some((item) => item.url === reference.url));
 
   return [...preferred, ...remaining].slice(0, maxItems);
+}
+
+function pickInlineReferences(result: CheckResponse, maxItems = 2) {
+  return pickDetailReferences(result, maxItems);
 }
 
 function getStageLabel(dayStageSlug: string) {
@@ -332,23 +336,9 @@ function getChoiceTips(result: CheckResponse) {
 
 function getShortReasons(result: CheckResponse) {
   if (result.matchedType === "fallback") {
-    if (result.dayStage.slug === "d5") {
-      return {
-        primary: "등록된 음식 기준이 없어 조심하는 편이 좋아요",
-        secondary: "씨나 껍질, 건더기가 많아 보이면 피하는 쪽이 더 안전해요",
-      };
-    }
-
-    if (result.dayStage.slug === "d1") {
-      return {
-        primary: "등록된 음식 기준이 없어 조심하는 편이 좋아요",
-        secondary: "전날에는 맑고 부드러운 음식이 아니면 피하는 쪽이 더 안전해요",
-      };
-    }
-
     return {
-      primary: "등록된 음식 기준이 없어 조심하는 편이 좋아요",
-      secondary: "채소나 건더기가 많아 보이면 피하는 쪽이 더 안전해요",
+      primary: result.primaryReason,
+      secondary: result.secondaryReason,
     };
   }
 
@@ -655,6 +645,11 @@ export default function HomePage() {
   const detailBadges = result ? getReferenceBadges(result) : [];
   const detailChoiceTips = result ? getChoiceTips(result) : [];
   const detailReferences = result ? pickDetailReferences(result) : [];
+  const inlineReferences = result ? pickInlineReferences(result) : [];
+  const displayedAlternatives =
+    result && (result.status !== "allowed" || result.matchedType === "fallback")
+      ? result.similarFoods.slice(0, 3)
+      : [];
   const faqStructuredData = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -696,7 +691,7 @@ export default function HomePage() {
               <span className="signal-dots" aria-hidden="true">
                 <span className="signal-dot signal-dot-red" />
                 <span className="signal-dot signal-dot-amber" />
-                <span className="signal-dot signal-dot-blue" />
+                <span className="signal-dot signal-dot-green" />
               </span>
               <span>건강신호등</span>
             </div>
@@ -727,7 +722,10 @@ export default function HomePage() {
           </div>
           <div className="hero-copy-block">
             <h1 className="hero-title">대장내시경 전에 먹어도 될까?</h1>
-            <p className="hero-copy">음식을 검색하면 바로 확인할 수 있어요</p>
+            <div className="hero-trust-block">
+              <p className="hero-copy">국내 주요 대학병원 대장내시경 안내문을 바탕으로 정리했어요.</p>
+              <p className="hero-note">최종 준비 기준과 약 복용 일정은 병원 안내가 우선입니다.</p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="search-panel">
@@ -801,6 +799,24 @@ export default function HomePage() {
                   {shortReasons?.secondary ? (
                     <p className="secondary-reason">{shortReasons.secondary}</p>
                   ) : null}
+                  {inlineReferences.length > 0 ? (
+                    <p className="inline-reference-row">
+                      <span className="inline-reference-label">출처:</span>{" "}
+                      {inlineReferences.map((reference, index) => (
+                        <span key={reference.url}>
+                          {index > 0 ? " · " : null}
+                          <a
+                            href={reference.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="reference-link is-inline"
+                          >
+                            {reference.label}
+                          </a>
+                        </span>
+                      ))}
+                    </p>
+                  ) : null}
                   {detailBadges.length > 0 ? (
                     <div className="tag-row">
                       {detailBadges.map((badge) => (
@@ -871,13 +887,13 @@ export default function HomePage() {
             </article>
 
             <section className="action-grid">
-              {result.similarFoods.length >= 2 ? (
+              {displayedAlternatives.length > 0 ? (
                 <article className="panel-card">
                   <div className="panel-header">
                     <h3>비슷한 음식으로 바꿔보세요</h3>
                   </div>
                   <div className="action-chip-list">
-                    {result.similarFoods.slice(0, 3).map((food) => (
+                    {displayedAlternatives.map((food) => (
                       <button
                         key={food.id}
                         type="button"
@@ -999,15 +1015,15 @@ export default function HomePage() {
         }
 
         .signal-dot-red {
-          background: #ef6b6b;
+          background: #DC2626;
         }
 
         .signal-dot-amber {
-          background: #f2b84b;
+          background: #F59E0B;
         }
 
-        .signal-dot-blue {
-          background: #5b7cf6;
+        .signal-dot-green {
+          background: #16A34A;
         }
 
         .share-box {
@@ -1102,12 +1118,29 @@ export default function HomePage() {
           max-width: 12em;
         }
 
+        .hero-trust-block {
+          display: grid;
+          gap: 2px;
+          margin-top: 18px;
+          max-width: 560px;
+        }
+
         .hero-copy {
-          margin: 10px 0 0;
+          margin: 0;
           color: var(--muted);
-          font-size: 15px;
+          font-size: 14px;
           line-height: 1.6;
-          max-width: 500px;
+          max-width: 560px;
+          font-weight: 500;
+        }
+
+        .hero-note {
+          margin: 0;
+          color: var(--muted);
+          font-size: 14px;
+          line-height: 1.6;
+          max-width: 560px;
+          font-weight: 500;
         }
 
         .search-panel {
@@ -1359,6 +1392,19 @@ export default function HomePage() {
           letter-spacing: -0.01em;
         }
 
+        .inline-reference-row {
+          margin: 8px 0 0;
+          color: #6b7280;
+          font-size: 13px;
+          line-height: 1.6;
+          max-width: 520px;
+        }
+
+        .inline-reference-label {
+          color: var(--text);
+          font-weight: 700;
+        }
+
         .action-grid {
           display: grid;
           gap: 0;
@@ -1464,6 +1510,11 @@ export default function HomePage() {
           text-decoration: none;
           font-size: 15px;
           font-weight: 500;
+        }
+
+        .reference-link.is-inline {
+          font-size: 13px;
+          font-weight: 600;
         }
 
         .reference-link:hover {

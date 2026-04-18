@@ -258,6 +258,156 @@ export function scoreAlternativeFoodName(name: string) {
   return score;
 }
 
+type ReferenceItem = {
+  label: string;
+  url: string;
+};
+
+type FallbackCategory = {
+  key: string;
+  tagSlugs: string[];
+  statusByStage: Record<string, "caution" | "avoid">;
+  primaryReasonByStage: Record<string, string>;
+  secondaryReasonByStage?: Partial<Record<string, string>>;
+  references: ReferenceItem[];
+};
+
+const fallbackGeneralReferences: ReferenceItem[] = [
+  {
+    label: "삼성서울병원 대장내시경 검사 안내",
+    url: "https://www.samsunghospital.com/home/healthMedical/private/checkupInfo/examGuide06.do",
+  },
+  {
+    label: "서울성모병원 대장내시경 준비 안내",
+    url: "https://healthcare.cmcseoul.or.kr/mw/personal/sub03_04.do",
+  },
+  {
+    label: "노원을지대학교병원 대장내시경 안내",
+    url: "https://health.eulji.or.kr/info/info_pg02_01.jsp",
+  },
+];
+
+const fallbackCategories: Array<{
+  key: string;
+  keywords: string[];
+  category: FallbackCategory;
+}> = [
+  {
+    key: "raw-fish",
+    keywords: ["생선회", "사시미", "육회", "물회", "숙회", "회"],
+    category: {
+      key: "raw-fish",
+      tagSlugs: ["chunky"],
+      statusByStage: { d5: "avoid", d3: "avoid", d1: "avoid" },
+      primaryReasonByStage: {
+        d5: "회처럼 날것에 가까운 음식은 가급적 먹지 마세요",
+        d3: "회처럼 날것에 가까운 음식은 절대 먹지 마세요",
+        d1: "회처럼 날것에 가까운 음식은 전날에는 절대 먹지 마세요",
+      },
+      secondaryReasonByStage: {
+        d5: "이 시기에는 흰죽이나 계란찜처럼 더 단순한 음식이 안전합니다",
+        d3: "부드럽고 익힌 음식 쪽으로 바꾸는 편이 안전합니다",
+        d1: "전날에는 맑은 국물이나 흰죽처럼 가장 가벼운 음식이 좋습니다",
+      },
+      references: fallbackGeneralReferences,
+    },
+  },
+  {
+    key: "vegetable-heavy",
+    keywords: ["샐러드", "쌈", "겉절이", "나물", "무침", "채소", "야채"],
+    category: {
+      key: "vegetable-heavy",
+      tagSlugs: ["vegetables-heavy", "high-fiber"],
+      statusByStage: { d5: "avoid", d3: "avoid", d1: "avoid" },
+      primaryReasonByStage: {
+        d5: "채소와 섬유질이 많은 음식은 검사 준비 중에는 피하세요",
+        d3: "채소와 섬유질이 많은 음식은 준비 식단에서는 피하세요",
+        d1: "채소와 섬유질이 많은 음식은 전날에는 절대 먹지 마세요",
+      },
+      secondaryReasonByStage: {
+        d5: "장에 남기 쉬운 재료부터 줄이는 편이 안전합니다",
+        d3: "이 시기에는 부드럽고 단순한 음식이 더 잘 맞습니다",
+        d1: "전날에는 맑고 건더기 없는 음식만 고르는 편이 안전합니다",
+      },
+      references: fallbackGeneralReferences,
+    },
+  },
+  {
+    key: "fried-spicy",
+    keywords: ["튀김", "치킨", "가라아게", "매운", "불닭", "마라"],
+    category: {
+      key: "fried-spicy",
+      tagSlugs: ["fried", "spicy-seasoning"],
+      statusByStage: { d5: "caution", d3: "avoid", d1: "avoid" },
+      primaryReasonByStage: {
+        d5: "기름지거나 자극적인 음식은 가급적 먹지 마세요",
+        d3: "기름지거나 자극적인 음식은 준비 식단에서는 피하세요",
+        d1: "기름지거나 자극적인 음식은 전날에는 절대 먹지 마세요",
+      },
+      secondaryReasonByStage: {
+        d5: "더 담백하고 단순한 음식으로 바꾸는 편이 안전합니다",
+        d3: "맑은 국물이나 흰죽처럼 부담이 적은 음식이 더 낫습니다",
+        d1: "전날에는 맑은 국물이나 미음처럼 가장 가벼운 음식이 좋습니다",
+      },
+      references: fallbackGeneralReferences,
+    },
+  },
+];
+
+const safeAlternativesByStage: Record<string, string[]> = {
+  d5: ["흰죽", "바나나", "계란찜"],
+  d3: ["흰죽", "우동", "계란찜"],
+  d1: ["흰죽", "미음", "맑은육수"],
+};
+
+function makeSuggestionId(name: string) {
+  return `fallback-safe-${normalizeKoreanText(name)}`;
+}
+
+export function getSafeAlternativeFoods(dayStageSlug: string, excludedNames: string[] = []) {
+  const excluded = new Set(excludedNames.map((name) => normalizeKoreanText(name)));
+  const names = safeAlternativesByStage[dayStageSlug] ?? safeAlternativesByStage.d3;
+
+  return names
+    .filter((name) => !excluded.has(normalizeKoreanText(name)))
+    .map((name) => ({
+      id: makeSuggestionId(name),
+      slug: normalizeKoreanText(name),
+      name,
+      note: "검사 준비에 더 무난한 대표 음식입니다.",
+    }));
+}
+
+export function inferFallbackCategory(normalizedQuery: string): FallbackCategory | null {
+  if (!normalizedQuery) {
+    return null;
+  }
+
+  for (const entry of fallbackCategories) {
+    if (entry.keywords.some((keyword) => normalizedQuery.includes(normalizeKoreanText(keyword)))) {
+      return entry.category;
+    }
+  }
+
+  return null;
+}
+
+function getGeneralFallbackCopy(dayStageSlug: string) {
+  if (dayStageSlug === "d1") {
+    return {
+      status: "avoid" as const,
+      primaryReason: "등록된 기준이 없어 절대 먹지 마세요",
+      secondaryReason: "전날에는 맑은 국물이나 흰죽처럼 가장 가벼운 음식이 좋습니다",
+    };
+  }
+
+  return {
+    status: "caution" as const,
+    primaryReason: "등록된 기준이 없어 가급적 먹지 마세요",
+    secondaryReason: "대신 더 부드럽고 단순한 음식이 안전합니다",
+  };
+}
+
 function rankAlternativeFoods<T extends { name: string; isRepresentative?: boolean; searchPriority?: number }>(
   foods: T[],
 ) {
@@ -683,6 +833,21 @@ function toUiRule(rule: ExposedAppliedRule) {
     rationale: rule.rationale,
     source: rule.source,
     references: rule.references,
+  };
+}
+
+function buildFallbackRule(
+  tagSlug: string,
+  status: "caution" | "avoid",
+  rationale: string,
+  references: ReferenceItem[],
+): ExposedAppliedRule {
+  return {
+    tagSlug,
+    status,
+    rationale,
+    source: "food_group",
+    references,
   };
 }
 
@@ -1229,6 +1394,9 @@ export async function checkFoodByQuery(input: {
       );
     }
 
+    const fallbackCategory =
+      matchedType === "fallback" ? inferFallbackCategory(normalizedQuery) : null;
+
     logCheckFood("match.summary", {
       ...requestContext,
       matchedType,
@@ -1243,20 +1411,65 @@ export async function checkFoodByQuery(input: {
       tags: candidateTags,
       rules: stageBundle.stageRules,
     });
-    const topAppliedRules = distributeUniqueReferencesAcrossRules(
+    let finalStatus = judgement.status;
+    let finalPrimaryReason = judgement.primaryReason;
+    let finalSecondaryReason = judgement.secondaryReason;
+    let finalAppliedTagSlugs = judgement.appliedTagSlugs;
+    let finalTopAppliedRules = distributeUniqueReferencesAcrossRules(
       judgement.topAppliedRules.map((rule) => ({
         ...rule,
         references: dedupeReferences([...directReferences, ...rule.references]),
       })),
     );
 
+    if (matchedType === "fallback") {
+      const fallbackReferences = fallbackCategory?.references ?? fallbackGeneralReferences;
+
+      if (fallbackCategory) {
+        finalStatus = fallbackCategory.statusByStage[stageBundle.dayStage.slug] ?? "caution";
+        finalPrimaryReason =
+          fallbackCategory.primaryReasonByStage[stageBundle.dayStage.slug] ??
+          judgement.primaryReason;
+        finalSecondaryReason =
+          fallbackCategory.secondaryReasonByStage?.[stageBundle.dayStage.slug] ??
+          judgement.secondaryReason;
+        finalAppliedTagSlugs = fallbackCategory.tagSlugs;
+        finalTopAppliedRules = [
+          buildFallbackRule(
+            fallbackCategory.key,
+            finalStatus,
+            finalPrimaryReason,
+            fallbackReferences,
+          ),
+        ];
+      } else if (!finalTopAppliedRules.length) {
+        const generalFallbackCopy = getGeneralFallbackCopy(stageBundle.dayStage.slug);
+
+        finalStatus = generalFallbackCopy.status;
+        finalPrimaryReason = generalFallbackCopy.primaryReason;
+        finalSecondaryReason = generalFallbackCopy.secondaryReason;
+        finalTopAppliedRules = [
+          buildFallbackRule(
+            "fallback-general",
+            generalFallbackCopy.status,
+            finalPrimaryReason,
+            fallbackReferences,
+          ),
+        ];
+      }
+    }
+
+    if (!similarFoods.length && (matchedType === "fallback" || finalStatus !== "allowed")) {
+      similarFoods = getSafeAlternativeFoods(stageBundle.dayStage.slug, [input.query]);
+    }
+
     logCheckFood("judgement.result", {
       ...requestContext,
       matchedType,
-      status: judgement.status,
+      status: finalStatus,
       confidenceGrade: judgement.confidenceGrade,
-      appliedTagSlugs: judgement.appliedTagSlugs,
-      topAppliedRules,
+      appliedTagSlugs: finalAppliedTagSlugs,
+      topAppliedRules: finalTopAppliedRules,
       usedFallbackReason: judgement.usedFallbackReason,
     });
 
@@ -1269,8 +1482,8 @@ export async function checkFoodByQuery(input: {
     });
 
     const logMetadata: Prisma.JsonObject = {
-      appliedTagSlugs: judgement.appliedTagSlugs,
-      topAppliedRules: topAppliedRules.map((rule) => ({
+      appliedTagSlugs: finalAppliedTagSlugs,
+      topAppliedRules: finalTopAppliedRules.map((rule) => ({
         tagSlug: rule.tagSlug,
         status: rule.status,
         rationale: rule.rationale,
@@ -1290,7 +1503,7 @@ export async function checkFoodByQuery(input: {
           dayStageId: stageBundle.dayStage.id,
           matchedType,
           matchedId,
-          resultStatus: judgement.status,
+          resultStatus: finalStatus,
           confidenceGrade: judgement.confidenceGrade,
           metadata: logMetadata,
         },
@@ -1301,7 +1514,7 @@ export async function checkFoodByQuery(input: {
           ...requestContext,
           matchedType,
           matchedId,
-          resultStatus: judgement.status,
+          resultStatus: finalStatus,
           confidenceGrade: judgement.confidenceGrade,
         });
       })
@@ -1344,12 +1557,12 @@ export async function checkFoodByQuery(input: {
       },
       matchedType,
       matchedEntity,
-      status: judgement.status,
+      status: finalStatus,
       confidenceGrade: judgement.confidenceGrade,
-      primaryReason: judgement.primaryReason,
-      secondaryReason: judgement.secondaryReason,
-      appliedTagSlugs: judgement.appliedTagSlugs,
-      topAppliedRules: topAppliedRules.map(toUiRule),
+      primaryReason: finalPrimaryReason,
+      secondaryReason: finalSecondaryReason,
+      appliedTagSlugs: finalAppliedTagSlugs,
+      topAppliedRules: finalTopAppliedRules.map(toUiRule),
       similarFoods,
       recommendedMenus: recommendedMenus.map((menu) => ({
         id: menu.id,
