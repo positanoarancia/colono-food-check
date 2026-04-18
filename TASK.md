@@ -235,6 +235,7 @@
 * [x] 허용군 대표 food/group도 representative QA 보호막에 포함해 날짜별 판정 회귀를 방지
 * [x] `바나나`, `감자`, `흰쌀밥`, `카스테라`, `이온음료`까지 허용군 exact food coverage smoke test 범위를 확장
 * [x] `사과쥬스`, `맑은 국물`, `건더기 없는 국물`, `흰미음` 등 허용군 안전 alias 보강 및 smoke test 기대치 재정렬
+* [x] direct hospital food 검색 표현(`계란 음식`, `두부 음식`, `국물 음식`, `맑은 음료수`) alias 보강 및 smoke test 고정
 * [x] fallback 박스 제목을 판단 방법 중심 문구로 바꾸고 어려운 표현(`잔사`) 제거
 * [x] fallback 상세 토글을 날짜별 자가판단 가이드로 맞추고 문구 가독성을 위한 폰트/줄길이 보정
 * [x] fallback 결과 문구를 날짜별 자가판단형 안내로 나눠 기준이 없을 때도 다음 판단 기준을 바로 볼 수 있게 보정

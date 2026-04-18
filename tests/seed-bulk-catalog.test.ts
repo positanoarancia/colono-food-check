@@ -69,6 +69,10 @@ test("bulk expansion creates common variant aliases", () => {
     "맑은 국물",
     "건더기 없는 국물",
     "흰미음",
+    "계란 음식",
+    "두부 음식",
+    "국물 음식",
+    "맑은 음료수",
   ]) {
     assert.ok(aliasSet.has(expected), `missing variant alias: ${expected}`);
   }
