@@ -100,12 +100,17 @@ test("core allowed representative foods keep direct hospital coverage", () => {
   const foodIdByName = new Map(foods.map((food) => [food.name, food.id]));
 
   for (const [foodName, minimumSources] of [
+    ["흰쌀밥", 3],
     ["흰죽", 3],
     ["미음", 3],
+    ["카스테라", 2],
     ["식빵", 3],
     ["계란찜", 3],
     ["두부", 3],
+    ["바나나", 3],
+    ["감자", 3],
     ["맑은육수", 3],
+    ["이온음료", 2],
     ["사과주스", 2],
   ] as const) {
     const foodId = foodIdByName.get(foodName);
