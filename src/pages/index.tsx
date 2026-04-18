@@ -723,8 +723,8 @@ export default function HomePage() {
           <div className="hero-copy-block">
             <h1 className="hero-title">대장내시경 전에 먹어도 될까?</h1>
             <div className="hero-trust-block">
-              <p className="hero-copy">국내 주요 대학병원 대장내시경 안내문을 바탕으로 정리했어요.</p>
-              <p className="hero-note">최종 식단과 복용 일정은 병원 안내를 먼저 따라주세요.</p>
+              <p className="hero-support">국내 주요 대학병원 대장내시경 안내문을 바탕으로 정리했어요.</p>
+              <p className="hero-support">최종 식단과 복용 일정은 병원 안내를 먼저 따라주세요.</p>
             </div>
           </div>
 
@@ -1125,16 +1125,7 @@ export default function HomePage() {
           max-width: 560px;
         }
 
-        .hero-copy {
-          margin: 0;
-          color: var(--muted);
-          font-size: 14px;
-          line-height: 1.6;
-          max-width: 560px;
-          font-weight: 500;
-        }
-
-        .hero-note {
+        .hero-support {
           margin: 0;
           color: var(--muted);
           font-size: 14px;
@@ -1737,13 +1728,9 @@ export default function HomePage() {
             display: none;
           }
 
-          .hero-copy,
+          .hero-support,
           .primary-reason {
             font-size: 16px;
-          }
-
-          .hero-note {
-            font-size: 13px;
           }
 
           .decision-status {
